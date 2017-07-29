@@ -1,0 +1,49 @@
+<resources>
+    <string name="app_name">Pomodoro Timer</string>
+    <string name="action_settings">Settings</string>
+    <string name="pref_activity_time_key" translatable="false">pref_activity_time</string>
+    <string name="pref_activity_time">Pomodoro Length</string>
+    <string name="pref_activity_time_smry">Preferred pomodoro length: %s minutes</string>
+    <string name="pref_break_time_key" translatable="false">pref_break_time</string>
+    <string name="pref_break_time">Pomodoro Break</string>
+    <string name="pref_break_time_smry">Preferred break length: %s minutes</string>
+    <string name="pref_sound_alarm">Play Notification</string>
+    <string name="pref_sound_alarm_key" translatable="false">pref_sound_alarm</string>
+    <string name="pref_sound_alarm_smry">Play notification sound when time expires</string>
+
+    <string name="label_activity_length">Pomodoro Length</string>
+    <string name="label_break_length">Break Length</string>
+    <string name="label_event_name">Event Name</string>
+    <string name="title_activity_settings">Preferences</string>
+
+    <string name="create_event_title">Start a New Event</string>
+    <string name="create_pomodoro_title">Start a New Pomodoro</string>
+    <string name="hint_event_name">Enter a name</string>
+    <string name="create_event_button">Create</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="title_activity_event_timer">Event Timer</string>
+    <string name="next_pomodoro_btn">Start Pomodoro</string>
+    <string name="start_break_btn">Break</string>
+    <string name="intermission_btn">Intermission</string>
+    <string name="end_event_btn">Finish Event</string>
+
+    <string name="activity_status_waiting"></string>
+    <string name="activity_status_intermission">Intermission</string>
+    <string name="activity_status_break">On Break</string>
+    <string name="activity_status_activity"></string>
+
+    <string name="waiting_for_pomodoro">Waiting to start ...</string>
+    <string name="blank_timer">-- --</string>
+
+    <string name="pomodoro_activity_time">Activity: %s</string>
+    <string name="hint_pomodoro_name">Name for the pomodoro</string>
+    <string name="default_pomodoro_name">Pomodoro %1$d</string>
+    <string name="placeholder_event_nane">Current Event</string>
+    <string name="label_activity_average">Activity Average: %s</string>
+    <string name="label_activity_total">Activity Total Time: %s</string>
+    <string name="label_time_total">Total Time: %s</string>
+    <string name="label_break_average">Break Time Average: %s</string>
+    <string name="pomodoro_break_time">Break: %s</string>
+    <string name="title_summary">Event Summary</string>
+    <string name="main_activity_title">Pomodoro Events</string>
+</resources>

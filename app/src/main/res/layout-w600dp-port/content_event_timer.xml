@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="450dp"
+    android:layout_height="600dp"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.operationalsystems.pomodorotimer.EventTimerActivity"
+    tools:showIn="@layout/activity_event_timer"
+    android:layout_gravity="center">
+
+    <TextView
+        android:id="@+id/text_pomodoro_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/small_layout_margin"
+        android:textAppearance="@style/PomodoroDisplayText"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        tools:text="Pomodoro 2" />
+
+    <TextView
+        android:id="@+id/text_timer_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/PomodoroBreakTimerText"
+        android:textSize="@dimen/xlarge_timer_text"
+        app:layout_constraintTop_toBottomOf="@+id/text_pomodoro_name"
+        app:layout_constraintBottom_toTopOf="@id/button_toggle_state"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        tools:text="25:00"
+        android:layout_marginLeft="8dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        android:layout_marginRight="8dp"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <TextView
+        android:id="@+id/text_current_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:textColor="@color/breakColor"
+        android:layout_marginTop="@dimen/base_layout_margin"
+        app:layout_constraintTop_toBottomOf="@+id/text_timer_count"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        tools:text="On break"/>
+
+    <Button
+        android:id="@+id/button_toggle_state"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+        android:text="@string/next_pomodoro_btn"
+        style="@style/PomodoroButton"
+        app:layout_constraintBottom_toTopOf="@+id/button_intermission"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
+    <Button
+        android:id="@+id/button_intermission"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+        android:visibility="visible"
+        android:text="@string/intermission_btn"
+        style="@style/PomodoroButton"
+        app:layout_constraintBottom_toTopOf="@+id/button_end_event"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
+    <Button
+        android:id="@+id/button_end_event"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+        style="@style/PomodoroButton"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:text="@string/end_event_btn" />
+
+</android.support.constraint.ConstraintLayout>

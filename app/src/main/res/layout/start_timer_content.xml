@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="344dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/label_event_name"
+        tools:text="Event Name Here"
+        android:layout_marginTop="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+        />
+
+    <EditText
+        android:layout_width="344dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/edit_pomodoro_name"
+        android:layout_marginBottom="@dimen/large_layout_margin"
+        android:hint="@string/hint_pomodoro_name"
+        android:layout_marginTop="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+     />
+
+    <include layout="@layout/length_pickers" />
+</LinearLayout>

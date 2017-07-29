@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1B75BB</color>
+    <color name="colorPrimaryLight">#C5CAE9</color>
+    <color name="colorPrimaryDark">#1A66A1</color>
+    <color name="colorAccent">#8BC53F</color>
+    <color name="colorMaxAccent">#B2FF59</color>
+    <color name="colorTitle">@android:color/darker_gray</color>
+    <color name="lightText">#FFFFDD</color>
+    <color name="breakColor">#00FFCC</color>
+    <color name="breakColorOvertime">@color/colorMaxAccent</color>
+    <color name="activityColor">#FFCCCC</color>
+    <color name="activityColorOvertime">@color/colorMaxAccent</color>
+    <color name="waitingColor">@color/lightText</color>
+    <color name="activeTimerColor">@color/activityColor</color>
+    <color name="breakTimerColor">@color/breakColor</color>
+    <color name="waitingTimerColor">@color/waitingColor</color>
+
+    <color name="pomodoroButtonBackground">@color/lightText</color>
+    <color name="cardBackground">@color/lightText</color>
+
+</resources>

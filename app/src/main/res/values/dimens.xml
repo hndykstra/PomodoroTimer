@@ -1,0 +1,11 @@
+<resources>
+    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="event_item_margin">8dp</dimen>
+    <dimen name="event_item_text_size">24sp</dimen>
+    <dimen name="base_layout_margin">16dp</dimen>
+    <dimen name="small_layout_margin">8dp</dimen>
+    <dimen name="large_layout_margin">24dp</dimen>
+    <dimen name="guide_inset">64dp</dimen>
+    <dimen name="max_list_width">450dp</dimen>
+    <dimen name="xlarge_timer_text">96sp</dimen>
+</resources>

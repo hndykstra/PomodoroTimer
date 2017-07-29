@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.operationalsystems.pomodorotimer.EventTimerActivity"
+    tools:showIn="@layout/activity_event_timer">
+
+    <android.support.constraint.Guideline
+        android:id="@+id/guide_middle"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5" />
+
+    <TextView
+        android:id="@+id/text_pomodoro_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="@dimen/small_layout_margin"
+        android:textAppearance="@style/PomodoroDisplayText"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Pomodoro 2" />
+
+    <TextView
+        android:id="@+id/text_timer_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:textAppearance="@style/PomodoroBreakTimerText"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/guide_middle"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/guide_middle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="25:00" />
+
+    <TextView
+        android:id="@+id/text_current_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/base_layout_margin"
+        app:layout_constraintEnd_toStartOf="@id/guide_middle"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/guide_middle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/text_timer_count"
+        tools:text="On break"
+        tools:textColor="@color/breakColor" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/guide_middle"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintStart_toEndOf="@id/guide_middle">
+
+        <Button
+            android:id="@+id/button_toggle_state"
+            style="@style/PomodoroButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/large_layout_margin"
+            android:layout_marginEnd="@dimen/base_layout_margin"
+            android:layout_marginLeft="@dimen/base_layout_margin"
+            android:layout_marginRight="@dimen/base_layout_margin"
+            android:layout_marginStart="@dimen/base_layout_margin"
+            android:layout_marginTop="@dimen/large_layout_margin"
+            android:layout_weight="1"
+            android:text="@string/next_pomodoro_btn" />
+
+        <Button
+            android:id="@+id/button_intermission"
+            style="@style/PomodoroButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/large_layout_margin"
+            android:layout_marginEnd="@dimen/base_layout_margin"
+            android:layout_marginLeft="@dimen/base_layout_margin"
+            android:layout_marginRight="@dimen/base_layout_margin"
+            android:layout_marginStart="@dimen/base_layout_margin"
+            android:layout_marginTop="@dimen/large_layout_margin"
+            android:text="@string/intermission_btn"
+            android:layout_weight="1"
+            android:visibility="visible" />
+
+        <Button
+            android:id="@+id/button_end_event"
+            style="@style/PomodoroButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/large_layout_margin"
+            android:layout_marginEnd="@dimen/base_layout_margin"
+            android:layout_marginLeft="@dimen/base_layout_margin"
+            android:layout_marginRight="@dimen/base_layout_margin"
+            android:layout_marginStart="@dimen/base_layout_margin"
+            android:layout_marginTop="@dimen/large_layout_margin"
+            android:layout_weight="1"
+            android:text="@string/end_event_btn" />
+
+    </LinearLayout>
+
+</android.support.constraint.ConstraintLayout>

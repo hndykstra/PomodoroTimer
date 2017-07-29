@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="min_activity_length">5</integer>
+    <integer name="max_activity_length">120</integer>
+    <integer name="min_break_length">2</integer>
+    <integer name="max_break_length">15</integer>
+</resources>

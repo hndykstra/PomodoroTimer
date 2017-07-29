@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:defaultValue="25"
+        android:key="@string/pref_activity_time_key"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:summary="@string/pref_activity_time_smry"
+        android:title="@string/pref_activity_time" />
+    <EditTextPreference
+        android:defaultValue="5"
+        android:key="@string/pref_break_time_key"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:summary="@string/pref_break_time_smry"
+        android:title="@string/pref_break_time" />
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="@string/pref_sound_alarm_key"
+        android:summary="@string/pref_sound_alarm_smry"
+        android:title="@string/pref_sound_alarm" />
+</PreferenceScreen>

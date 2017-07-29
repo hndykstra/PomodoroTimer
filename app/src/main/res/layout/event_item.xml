@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/base_layout_margin"
+        android:layout_margin="@dimen/small_layout_margin"
+        app:cardElevation="@dimen/cardview_default_elevation"
+        app:cardCornerRadius="@dimen/cardview_default_radius"
+        style="@style/CardStyle">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/eventItemTitleView"
+            android:layout_marginStart="@dimen/event_item_margin"
+            android:layout_marginTop="@dimen/event_item_margin"
+            android:layout_marginBottom="@dimen/event_item_margin"
+            android:textAppearance="?textAppearanceListItem"
+            tools:text="This is my activity"/>
+    </android.support.v7.widget.CardView>
+</LinearLayout>
