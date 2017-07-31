@@ -1,15 +1,22 @@
 package com.operationalsystems.pomodorotimer;
 
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.NavUtils;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.View;
 import android.widget.TextView;
 
 import com.operationalsystems.pomodorotimer.data.Event;
@@ -70,6 +77,14 @@ public class EventSummaryActivity extends AppCompatActivity  implements LoaderMa
             this.eventId = getIntent().getIntExtra(EventListActivity.EXTRA_EVENT_ID, -1);
             initializeEventState();
         }
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                confirmDelete();
+            }
+        });
     }
 
     @Override
@@ -157,6 +172,42 @@ public class EventSummaryActivity extends AppCompatActivity  implements LoaderMa
         } else {
             this.averageBreak.setText(getString(R.string.label_break_average, "*"));
         }
+    }
+
+    private void confirmDelete() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirm_delete_event_title)
+                .setMessage(R.string.confirm_delete_event_message)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(R.string.confirm_delete_event_positive, new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        deleteAndReturn();
+                    }})
+                .setNegativeButton(R.string.confirm_delete_event_negative, null).show();
+    }
+
+    private void deleteAndReturn() {
+        new AsyncTask<Void, Void, Boolean>() {
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                final Uri deleteUri = PomodoroEventContract.Event.uriForEventId(eventId);
+                int deleted = getContentResolver().delete(deleteUri, null, null);
+                return deleted == 1;
+            }
+
+            @Override
+            protected void onPostExecute(final Boolean result) {
+                if (result) {
+                    NavUtils.navigateUpFromSameTask(EventSummaryActivity.this);
+                } else {
+                    Snackbar.make(findViewById(R.id.main_layout),
+                            "Failed to delete event", Snackbar.LENGTH_LONG)
+                        .show();
+                }
+            }
+        }.execute();
     }
 
     @Override

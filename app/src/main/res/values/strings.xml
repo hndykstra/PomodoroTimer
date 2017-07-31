@@ -46,4 +46,9 @@
     <string name="pomodoro_break_time">Break: %s</string>
     <string name="title_summary">Event Summary</string>
     <string name="main_activity_title">Pomodoro Events</string>
+
+    <string name="confirm_delete_event_title">Delete Event</string>
+    <string name="confirm_delete_event_message">This will delete the record of this event.</string>
+    <string name="confirm_delete_event_positive">Continue</string>
+    <string name="confirm_delete_event_negative">Cancel</string>
 </resources>
