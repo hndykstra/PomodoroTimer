@@ -39,8 +39,8 @@ import java.util.List;
  */
 public class EventListActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
-    public static final String PLACEHOLDER_OWNER = "opsysinc";
-    public static final String PLACEHOLDER_TEAM = "test.operationalsystems";
+    public static final String PLACEHOLDER_OWNER = "anonymous";
+    public static final String PLACEHOLDER_TEAM = "test";
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
 
     private class AuthListener implements FirebaseAuth.AuthStateListener {
@@ -49,16 +49,10 @@ public class EventListActivity extends AppCompatActivity implements LoaderManage
         public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
             FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             if (currentUser != null) {
-                theUser = currentUser;
+                onLogin(currentUser);
             } else {
-                startActivityForResult(
-                        AuthUI.getInstance()
-                                .createSignInIntentBuilder()
-                                .setAvailableProviders(
-                                        Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
-                                                new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
-                                .build(),
-                        RESULT_AUTH_ID);            }
+                onLogout();
+            }
         }
     }
 
@@ -145,6 +139,23 @@ public class EventListActivity extends AppCompatActivity implements LoaderManage
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void onLogin(final FirebaseUser user) {
+        this.theUser = user;
+        // other things like kick off the loaders
+    }
+
+    private void onLogout() {
+        this.theUser = null;
+        startActivityForResult(
+                AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setAvailableProviders(
+                                Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
+                                        new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
+                        .build(),
+                RESULT_AUTH_ID);
     }
 
     private void eventSelected(Event event) {
@@ -262,10 +273,11 @@ public class EventListActivity extends AppCompatActivity implements LoaderManage
         final Uri eventUri = PomodoroEventContract.BASE_CONTENT_URI.buildUpon()
                 .appendPath(PomodoroEventContract.PATH_EVENT)
                 .build();
-        Date createDate = new Date();
-        Event newEvent = new Event(params.eventName, PLACEHOLDER_OWNER, createDate, true,
+        final Date createDate = new Date();
+        final String user = this.theUser == null ? PLACEHOLDER_OWNER : this.theUser.getUid();
+        Event newEvent = new Event(params.eventName, user, createDate, true,
                 params.activityMinutes, params.breakMinutes, PLACEHOLDER_TEAM);
-        Uri insertedUri = getContentResolver().insert(eventUri, newEvent.asContent());
+        final Uri insertedUri = getContentResolver().insert(eventUri, newEvent.asContent());
         getSupportLoaderManager().restartLoader(EVENT_LOADER_ID, null, this);
         this.adapter.notifyDataSetChanged();
     }
