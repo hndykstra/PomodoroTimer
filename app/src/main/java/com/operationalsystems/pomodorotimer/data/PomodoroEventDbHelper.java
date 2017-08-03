@@ -6,7 +6,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 /**
- * Created by Hans on 6/27/2017.
+ * Helper class for SQLiteDatabase instance
  */
 
 public class PomodoroEventDbHelper extends SQLiteOpenHelper {
