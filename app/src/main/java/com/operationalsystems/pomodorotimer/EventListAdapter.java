@@ -8,6 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.firebase.database.DatabaseReference;
 import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 
@@ -18,49 +20,31 @@ import java.util.List;
  * Recycler list adapter for the event list view.
  */
 
-public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.EventItem> {
+public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAdapter.EventItem> {
 
     public interface EventSelectionListener {
         void eventSelected(Event event);
     }
 
     private EventSelectionListener listener;
-    private List<Event> eventList = new ArrayList<>();
 
-    @Override
-    public EventItem onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
-        int resourceId = R.layout.event_item;
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View v = inflater.inflate(resourceId, parent, false);
-
-        return new EventItem(v);
-    }
-
-    @Override
-    public void onBindViewHolder(EventItem holder, int position) {
-        if (position <0 || position >= eventList.size())
-            throw new IllegalArgumentException("Requested event item not found");
-
-        holder.bind(eventList.get(position));
-    }
-
-    @Override
-    public int getItemCount() {
-        return eventList.size();
-    }
-
-    public void setEvents(List<Event> events) {
-        this.eventList = (events != null ? events : new ArrayList<Event>());
-
-        notifyDataSetChanged();
-    }
-
-    public EventListAdapter(EventSelectionListener listener) {
+    public EventListAdapter(DatabaseReference reference, EventSelectionListener listener) {
+        super(Event.class, R.layout.event_item, EventListAdapter.EventItem.class, reference);
         this.listener = listener;
     }
 
-    public class EventItem extends RecyclerView.ViewHolder implements View.OnClickListener {
+    @Override
+    public void populateViewHolder(final EventItem holder, final Event event, final int position) {
+        holder.bind(event);
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EventListAdapter.this.listener.eventSelected(event);
+            }
+        });
+    }
+
+    static class EventItem extends RecyclerView.ViewHolder {
 
         private TextView titleView;
         private Event boundEvent;
@@ -69,18 +53,12 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.Even
             super(itemView);
 
             titleView = (TextView) itemView.findViewById(R.id.eventItemTitleView);
-            itemView.setOnClickListener(this);
         }
 
-        public void bind(Event event) {
+        void bind(Event event) {
             this.boundEvent = event;
             titleView.setText(event.getName());
             titleView.setEnabled(event.isActive());
-        }
-
-        @Override
-        public void onClick(View v) {
-            EventListAdapter.this.listener.eventSelected(boundEvent);
         }
     }
 }
