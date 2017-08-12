@@ -7,9 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.EventMember;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -18,9 +20,13 @@ import java.util.List;
  */
 
 public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberListAdapter.EventMemberItem> {
-    private List<EventMember> members = Collections.emptyList();
 
+    private Event theEvent;
+    private List<String> members = Collections.emptyList();
 
+    public EventMemberListAdapter(final Event theEvent) {
+        setEvent(theEvent);
+    }
 
     @Override
     public EventMemberItem onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -38,13 +44,18 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
         holder.bind(members.get(position));
     }
 
+    public void setEvent(final Event ev) {
+        this.theEvent = ev;
+        this.members = new ArrayList<>();
+        if (ev != null) {
+            this.members.addAll(ev.getMembers().values());
+            Collections.sort(this.members);
+        }
+    }
+
     @Override
     public int getItemCount() {
         return members.size();
-    }
-
-    public void setEventMembers(List<EventMember> members) {
-        this.members = members != null ? members : Collections.<EventMember>emptyList();
     }
 
     class EventMemberItem extends RecyclerView.ViewHolder {
@@ -56,8 +67,8 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
             memberName = (TextView) itemView.findViewById(R.id.text_member_name);
         }
 
-        void bind(EventMember member) {
-            this.memberName.setText(member.getMemberUid());
+        void bind(String member) {
+            this.memberName.setText(member);
         }
     }
 }

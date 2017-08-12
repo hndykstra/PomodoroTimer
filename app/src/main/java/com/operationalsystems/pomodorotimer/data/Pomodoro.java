@@ -3,72 +3,61 @@ package com.operationalsystems.pomodorotimer.data;
 import android.content.ContentValues;
 import android.database.Cursor;
 
+import com.google.firebase.database.Exclude;
+
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Locale;
 
 /**
- * Created by Hans on 7/2/2017.
+ * Data object for a pomodoro
  */
 
 public class Pomodoro {
-    private int id;
-    private int eventId;
+    private transient String key;
+    private transient String eventKey;
     private String name;
     private int sequence;
     private int timerMinutes;
     private int breakMinutes;
-    private Date startDt;
-    private Date breakDt;
-    private Date endDt;
+    private transient Date startDt;
+    private String startTime;
+    private transient Date breakDt;
+    private String breakTime;
+    private transient Date endDt;
+    private String endTime;
     private boolean active;
 
-    public Pomodoro(int eventId, String name, int sequence, int timerMinutes, int breakMinutes, Date startDt) {
-        this.id = -1;
-        this.eventId = eventId;
+    public Pomodoro() {
+    }
+
+    public Pomodoro(String eventKey, String name, int sequence, int timerMinutes, int breakMinutes, Date startDt) {
+        this.key = String.format(Locale.US, "%03d", sequence);
+        this.eventKey = eventKey;
         this.name = name;
         this.sequence = sequence;
         this.timerMinutes = timerMinutes;
         this.breakMinutes = breakMinutes;
         this.active = true;
-        this.startDt = startDt;
-        this.endDt = null;
-        this.breakDt = null;
+        setStartDt(startDt);
+        setEndDt(endDt);
+        setBreakDt(breakDt);
     }
 
-    public Pomodoro(Cursor row) {
-        try {
-            id = row.getInt(PomodoroEventContract.Timer.ID_INDEX);
-            eventId = row.getInt(PomodoroEventContract.Timer.EVENT_ID_INDEX);
-            name = row.getString(PomodoroEventContract.Timer.NAME_INDEX);
-            sequence = row.getInt(PomodoroEventContract.Timer.SEQ_INDEX);
-            timerMinutes = row.getInt(PomodoroEventContract.Timer.TIMER_MIN_INDEX);
-            breakMinutes = row.getInt(PomodoroEventContract.Timer.BREAK_MIN_INDEX);
-            String startDtText = row.getString(PomodoroEventContract.Timer.START_DT_INDEX);
-            startDt = DataUtil.dateFromDb(startDtText);
-            String breakDtText = row.getString(PomodoroEventContract.Timer.BREAK_DT_INDEX);
-            breakDt = DataUtil.dateFromDb(breakDtText);
-            String endDtText = row.getString(PomodoroEventContract.Timer.END_DT_INDEX);
-            endDt = DataUtil.dateFromDb(endDtText);
-            active = (row.getInt(PomodoroEventContract.Timer.ACTIVE_INDEX) != 0);
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
+    public String getKey() {
+        return key;
     }
 
-    public int getId() {
-        return id;
+    public void setKey(String key) {
+        this.key = key;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public String getEventKey() {
+        return eventKey;
     }
 
-    public int getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(int eventId) {
-        this.eventId = eventId;
+    public void setEventKey(String eventKey) {
+        this.eventKey = eventKey;
     }
 
     public String getName() {
@@ -103,28 +92,91 @@ public class Pomodoro {
         this.breakMinutes = breakMinutes;
     }
 
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getBreakTime() {
+        return breakTime;
+    }
+
+    public void setBreakTime(String breakTime) {
+        this.breakTime = breakTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    @Exclude
     public Date getStartDt() {
+        if (startDt == null && startTime != null && !startTime.isEmpty()) {
+            try {
+                startDt = DataUtil.dateFromDb(startTime);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date/time " + startTime, e);
+            }
+        }
         return startDt;
     }
 
     public void setStartDt(Date startDt) {
         this.startDt = startDt;
+        if (startDt == null) {
+            this.startTime = null;
+        } else {
+            this.startTime = DataUtil.dbFromDate(startDt);
+        }
     }
 
+    @Exclude
     public Date getBreakDt() {
+        if (breakDt == null && breakTime != null && !breakTime.isEmpty()) {
+            try {
+                breakDt = DataUtil.dateFromDb(breakTime);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date/time " + breakTime, e);
+            }
+        }
         return breakDt;
     }
 
     public void setBreakDt(Date breakDt) {
         this.breakDt = breakDt;
+        if (breakDt == null) {
+            this.breakTime = null;
+        } else {
+            this.breakTime = DataUtil.dbFromDate(breakDt);
+        }
     }
 
+    @Exclude
     public Date getEndDt() {
+        if (endDt == null && endTime != null && !endTime.isEmpty()) {
+            try {
+                endDt = DataUtil.dateFromDb(endTime);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date/time " + endTime, e);
+            }
+        }
         return endDt;
     }
 
     public void setEndDt(Date endDt) {
         this.endDt = endDt;
+        if (endDt == null) {
+            this.endTime = null;
+        } else {
+            this.endTime = DataUtil.dbFromDate(endDt);
+        }
     }
 
     public boolean isActive() {
@@ -133,20 +185,5 @@ public class Pomodoro {
 
     public void setActive(boolean active) {
         this.active = active;
-    }
-
-    public ContentValues asContent() {
-        ContentValues values = new ContentValues();
-        //values.put(PomodoroEventContract.Timer.ID_COL, id);
-        values.put(PomodoroEventContract.Timer.EVENT_FK_COL, eventId);
-        values.put(PomodoroEventContract.Timer.POMODORO_NAME_COL, name);
-        values.put(PomodoroEventContract.Timer.POMODORO_SEQ_COL, sequence);
-        values.put(PomodoroEventContract.Timer.TIMER_MINUTES_COL, timerMinutes);
-        values.put(PomodoroEventContract.Timer.BREAK_MINUTES_COL, breakMinutes);
-        values.put(PomodoroEventContract.Timer.ACTIVE_COL, active ? 1 : 0);
-        values.put(PomodoroEventContract.Timer.START_DT_COL, DataUtil.dbFromDate(startDt));
-        values.put(PomodoroEventContract.Timer.BREAK_DT_COL, DataUtil.dbFromDate(breakDt));
-        values.put(PomodoroEventContract.Timer.END_DT_COL, DataUtil.dbFromDate(endDt));
-        return values;
     }
 }

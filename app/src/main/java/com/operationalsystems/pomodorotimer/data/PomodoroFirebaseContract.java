@@ -10,16 +10,14 @@ import com.google.firebase.database.FirebaseDatabase;
 public class PomodoroFirebaseContract {
     public static final String USER_ROOT = "users";
     public static final String USER_EVENTS = "users/%s/privateEvents";
-    public static final String USER_MEMBER_OF_EVENTS = "users/%s/eventsJoined";
+    public static final String USER_MEMBER_OF_TEAM_EVENTS = "users/%s/eventsJoined/%s";
     public static final String USER_TEAMS = "users/%s/teams";
 
     public static final String TEAM_ROOT = "teams";
     public static final String TEAM_EVENTS = "teams/%s/events";
     public static final String TEAM_MEMBERS = "teams/%s/members";
+    public static final String TEAM_EVENT_MEMBERS = "teams/%s/eventMembers/%s";
 
-    public static final String EVENT_ROOT = "events";
-    public static final String EVENT_MEMBERS = "events/%s/members";
-    public static final String EVENT_POMODOROS = "events/%s/pomodoros";
 
     public static DatabaseReference getUsersReference(final FirebaseDatabase database) {
         return database.getReference(USER_ROOT);
@@ -33,8 +31,8 @@ public class PomodoroFirebaseContract {
         return database.getReference(String.format(USER_EVENTS, uid));
     }
 
-    public static DatabaseReference getUserEventsJoinedReference(final FirebaseDatabase database, final String uid) {
-        return database.getReference(String.format(USER_MEMBER_OF_EVENTS, uid));
+    public static DatabaseReference getUserEventsJoinedReference(final FirebaseDatabase database, final String uid, final String team) {
+        return database.getReference(String.format(USER_MEMBER_OF_TEAM_EVENTS, uid, team));
     }
 
     public static DatabaseReference getUserTeamsReference(final FirebaseDatabase database, final String uid) {
@@ -57,19 +55,7 @@ public class PomodoroFirebaseContract {
         return database.getReference(String.format(TEAM_MEMBERS, teamDomain));
     }
 
-    public static DatabaseReference getEventsReference(final FirebaseDatabase database) {
-        return database.getReference(EVENT_ROOT);
-    }
-
-    public static DatabaseReference getEventReference(final FirebaseDatabase database, final String eventId) {
-        return database.getReference(EVENT_ROOT + "/" + eventId);
-    }
-
-    public static DatabaseReference getEventMembersReference(final FirebaseDatabase database, final String eventId) {
-        return database.getReference(String.format(EVENT_MEMBERS, eventId));
-    }
-
-    public static DatabaseReference getEventPomodorosReference(final FirebaseDatabase database, final String eventId) {
-        return database.getReference(String.format(EVENT_POMODOROS, eventId));
+    public static DatabaseReference getTeamEventMembersReference(final FirebaseDatabase database, final String teamDomain, final String eventKey) {
+        return database.getReference(String.format(TEAM_EVENT_MEMBERS, teamDomain, eventKey));
     }
 }

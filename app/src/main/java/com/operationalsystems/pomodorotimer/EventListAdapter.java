@@ -19,7 +19,6 @@ import java.util.List;
 /**
  * Recycler list adapter for the event list view.
  */
-
 public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAdapter.EventItem> {
 
     public interface EventSelectionListener {
@@ -35,6 +34,10 @@ public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAd
 
     @Override
     public void populateViewHolder(final EventItem holder, final Event event, final int position) {
+        if (event.getKey() == null) {
+            event.setKey(getRef(position).getKey());
+        }
+
         holder.bind(event);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -42,6 +45,28 @@ public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAd
                 EventListAdapter.this.listener.eventSelected(event);
             }
         });
+    }
+
+    public Event getItem(int position) {
+        Event ev = (Event)super.getItem(position);
+        ev.setKey(this.getRef(position).getKey());
+        return ev;
+    }
+
+    public String getUniqueEventName(final String baseName) {
+        final ArrayList<String> names = new ArrayList<>();
+        for (int i = 0 ; i < getItemCount() ; ++i) {
+            Event ev = this.getItem(i);
+            names.add(ev.getName());
+        }
+
+        int count = 0;
+        String eventName = baseName;
+        while (names.contains(eventName)) {
+            ++count;
+            eventName = String.format("%s - %02d", baseName, count);
+        }
+        return eventName;
     }
 
     static class EventItem extends RecyclerView.ViewHolder {

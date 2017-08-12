@@ -5,8 +5,16 @@ import android.database.Cursor;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.firebase.database.Exclude;
+
+import java.text.Collator;
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * POJO for event data.
@@ -14,15 +22,28 @@ import java.util.Date;
 
 public class Event {
 
-    private int id;
+    private transient String key;
     private String name;
     private String owner;
-    private Date startDt;
-    private Date endDt;
+    private transient Date startDt;
+    private String startTime;
+    private transient Date endDt;
+    private String endTime;
     private boolean active;
     private String teamDomain;
     private int activityMinutes;
     private int breakMinutes;
+    private TreeMap<String,Pomodoro> pomodoros = new TreeMap<>(Collator.getInstance(Locale.US));
+    private Map<String,String> members = new HashMap<>();
+
+    /**
+     * Empty constructor for dynamic creation.
+     */
+    public Event() {
+        // set to invalid values
+        activityMinutes = -1;
+        breakMinutes = -1;
+    }
 
     /**
      * Constructor for a newly created event.
@@ -33,41 +54,24 @@ public class Event {
      * @param domain Team domain name
      */
     public Event(String name, String owner, Date startDt, boolean active, int activityMinutes, int breakMinutes, String domain) {
-        id = -1;
+        this.key = null;
         this.name = name;
         this.owner = owner;
-        this.startDt = startDt;
-        this.endDt = null;
+        setStartDt(startDt);
+        setEndDt(endDt);
         this.active = active;
         this.teamDomain = domain;
         this.activityMinutes = activityMinutes;
         this.breakMinutes = breakMinutes;
     }
 
-    public Event(Cursor row) {
-        try {
-            id = row.getInt(PomodoroEventContract.Event.ID_INDEX);
-            name = row.getString(PomodoroEventContract.Event.NAME_INDEX);
-            owner = row.getString(PomodoroEventContract.Event.OWNER_INDEX);
-            String startDtText = row.getString(PomodoroEventContract.Event.START_DT_INDEX);
-            startDt = DataUtil.dateFromDb(startDtText);
-            String endDtText = row.getString(PomodoroEventContract.Event.END_DT_INDEX);
-            endDt = DataUtil.dateFromDb(endDtText);
-            active = (row.getInt(PomodoroEventContract.Event.ACTIVE_INDEX) != 0);
-            teamDomain = row.getString(PomodoroEventContract.Event.TEAM_DOMAINN_INDEX);
-            activityMinutes = row.getInt(PomodoroEventContract.Event.EVENT_TIMER_MINUTES_INDEX);
-            breakMinutes = row.getInt(PomodoroEventContract.Event.EVENT_BREAK_MINUTES_INDEX);
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
+    public String getKey() {
+        return key;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+    public void setKey(String key) {
+        this.key = key;
+        synchPomodoros();
     }
 
     public String getName() {
@@ -86,20 +90,46 @@ public class Event {
         this.owner = owner;
     }
 
+    @Exclude
     public Date getStartDt() {
+        if (startDt == null && startTime != null && !startTime.isEmpty()) {
+            try {
+                startDt = DataUtil.dateFromDb(startTime);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date/time " + startTime, e);
+            }
+        }
         return startDt;
     }
 
     public void setStartDt(Date startDt) {
         this.startDt = startDt;
+        if (startDt == null) {
+            this.startTime = null;
+        } else {
+            this.startTime = DataUtil.dbFromDate(startDt);
+        }
     }
 
+    @Exclude
     public Date getEndDt() {
+        if (endDt == null && endTime != null && !endTime.isEmpty()) {
+            try {
+                endDt = DataUtil.dateFromDb(endTime);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Invalid date/time " + endTime, e);
+            }
+        }
         return endDt;
     }
 
     public void setEndDt(Date endDt) {
         this.endDt = endDt;
+        if (endDt == null) {
+            this.endTime = null;
+        } else {
+            this.endTime = DataUtil.dbFromDate(endDt);
+        }
     }
 
     public boolean isActive() {
@@ -134,17 +164,71 @@ public class Event {
         this.breakMinutes = breakMinutes;
     }
 
-    public ContentValues asContent() {
-        ContentValues values = new ContentValues();
-        //values.put(PomodoroEventContract.Event.ID_COL, id);
-        values.put(PomodoroEventContract.Event.EVENT_NAME_COL, name);
-        values.put(PomodoroEventContract.Event.ACTIVE_COL, active ? 1 : 0);
-        values.put(PomodoroEventContract.Event.OWNER_COL, owner);
-        values.put(PomodoroEventContract.Event.TEAM_DOMAIN_COL, teamDomain);
-        values.put(PomodoroEventContract.Event.START_DT_COL, DataUtil.dbFromDate(startDt));
-        values.put(PomodoroEventContract.Event.END_DT_COL, DataUtil.dbFromDate(endDt));
-        values.put(PomodoroEventContract.Event.EVENT_TIMER_MINUTES_COL, activityMinutes);
-        values.put(PomodoroEventContract.Event.EVENT_BREAK_MINUTES_COL, breakMinutes);
-        return values;
+    public String getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public void addPomodoro(Pomodoro p) {
+        this.pomodoros.put(p.getKey(), p);
+        p.setEventKey(this.getKey());
+    }
+
+    public SortedMap<String, Pomodoro> getPomodoros() {
+        return this.pomodoros;
+    }
+
+    public void setPomodoros(Map<String, Pomodoro> map) {
+        this.pomodoros.clear();
+        this.pomodoros.putAll(map);
+    }
+
+    public void clearPomodoros() {
+        this.pomodoros.clear();
+    }
+
+    @Exclude
+    public Pomodoro getCurrentPomodoro() {
+        if (this.pomodoros.isEmpty()) {
+            return null;
+        }
+        return this.pomodoros.lastEntry().getValue();
+    }
+
+    public void synchPomodoros() {
+        for (Map.Entry<String, Pomodoro> entry : pomodoros.entrySet()) {
+            Pomodoro p = entry.getValue();
+            p.setKey(entry.getKey());
+            p.setEventKey(this.getKey());
+        }
+    }
+
+    public Map<String, String> getMembers() {
+        return members;
+    }
+
+    public void setMembers(Map<String,String> members) {
+        this.members = members;
+    }
+
+    public void addMember(final String user, final Date asOf) {
+        if (members.get(user) == null) {
+            members.put(user, DataUtil.dbFromDate(asOf));
+        }
+    }
+
+    public void removeMember(final String user) {
+        members.remove(user);
     }
 }

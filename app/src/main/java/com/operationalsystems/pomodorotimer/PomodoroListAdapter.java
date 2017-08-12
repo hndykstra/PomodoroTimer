@@ -7,11 +7,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Recycler adapter for list of pomodoros associated with an event
@@ -19,7 +23,13 @@ import java.util.List;
 
 public class PomodoroListAdapter extends RecyclerView.Adapter<PomodoroListAdapter.PomodoroItem> {
 
+    private Event theEvent;
     private List<Pomodoro> pomodoroList = Collections.emptyList();
+
+    public PomodoroListAdapter(final Event theEvent) {
+        setEvent(theEvent);
+    }
+
 
     @Override
     public PomodoroItem onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -44,9 +54,20 @@ public class PomodoroListAdapter extends RecyclerView.Adapter<PomodoroListAdapte
         return pomodoroList.size();
     }
 
-    public void setPomodoroList(List<Pomodoro> pomodoros) {
-        this.pomodoroList = pomodoros != null ? pomodoros : Collections.<Pomodoro>emptyList();
-        notifyDataSetChanged();
+    public void setEvent(Event ev) {
+        this.theEvent = ev;
+        pomodoroList = new ArrayList<>();
+
+        if (ev != null) {
+            Map<String, Pomodoro> pomodoros = ev.getPomodoros();
+            pomodoroList.addAll(pomodoros.values());
+            Collections.sort(pomodoroList, new Comparator<Pomodoro>() {
+                @Override
+                public int compare(Pomodoro o1, Pomodoro o2) {
+                    return o1.getStartDt().compareTo(o2.getStartDt());
+                }
+            });
+        }
     }
 
     public class PomodoroItem extends RecyclerView.ViewHolder {
@@ -55,7 +76,7 @@ public class PomodoroListAdapter extends RecyclerView.Adapter<PomodoroListAdapte
         private TextView breakView;
         private Pomodoro boundPomodoro;
 
-        public PomodoroItem(View itemView) {
+        PomodoroItem(View itemView) {
             super(itemView);
 
             titleView = (TextView) itemView.findViewById(R.id.text_pomodoro_name);
@@ -63,7 +84,7 @@ public class PomodoroListAdapter extends RecyclerView.Adapter<PomodoroListAdapte
             breakView = (TextView) itemView.findViewById(R.id.text_pomodoro_break);
         }
 
-        public void bind(Pomodoro pomodoro) {
+        void bind(Pomodoro pomodoro) {
             this.boundPomodoro = pomodoro;
             titleView.setText(pomodoro.getName());
             Date start = pomodoro.getStartDt();

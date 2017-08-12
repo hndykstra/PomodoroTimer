@@ -1,8 +1,15 @@
 package com.operationalsystems.pomodorotimer.data;
 
+import android.provider.ContactsContract;
+
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import java.util.Date;
+import java.util.Objects;
 
 /**
  * Helper methods to reduce client code load.
@@ -38,24 +45,80 @@ public class PomodoroFirebaseHelper {
         PomodoroFirebaseContract.getUserTeamsReference(database, userId).addListenerForSingleValueEvent(valueReceiver);
     }
 
-    /**
-     * Adds a listener that receives child events for teams. This will receive childAdded events for existing teams
-     * and other events as data changes, until unsubscribed.
-     * @param teamReceiver Callback will receive data notifications.
-     */
-    public void subscribePublicTeams(final ChildEventListener teamReceiver) {
-        PomodoroFirebaseContract.getTeamsReference(database)
-                .orderByChild("public")
-                .equalTo(true)
-                .addChildEventListener(teamReceiver);
+    public void queryEvent(final String eventKey, final String teamDomain, final String uid, final ValueEventListener valueReceiver) {
+        if (teamDomain == null || teamDomain.isEmpty()) {
+            PomodoroFirebaseContract.getUserPrivateEventReference(database, uid)
+                    .child(eventKey)
+                    .addListenerForSingleValueEvent(valueReceiver);
+        } else {
+            PomodoroFirebaseContract.getTeamEventsReference(database, teamDomain)
+                    .child(eventKey)
+                    .addListenerForSingleValueEvent(valueReceiver);
+        }
     }
 
-    public void unsubscribePublicTeams(final ChildEventListener teamReceiver) {
-        // TODO: does this work, or do I need to keep a reference to the original Query?
-        // it appears the listener is added / removed to some underlying DB resource
-        // so removing it this way will work... maybe
-        PomodoroFirebaseContract.getTeamsReference(database)
-                .removeEventListener(teamReceiver);
+    public DatabaseReference getEventsReference(final String teamDomain, final String uid) {
+        if (teamDomain == null || teamDomain.isEmpty()) {
+            return PomodoroFirebaseContract.getUserPrivateEventReference(this.database, uid);
+        } else {
+            return PomodoroFirebaseContract.getTeamEventsReference(this.database, teamDomain);
+        }
     }
 
+    public String createEvent(Event ev) {
+        String key;
+        if (ev.getTeamDomain() != null && !ev.getTeamDomain().isEmpty()) {
+            // event created unter teams if domain is set
+            DatabaseReference teamEventsReference  = PomodoroFirebaseContract.getTeamEventsReference(this.database, ev.getTeamDomain());
+            DatabaseReference newEventRef = teamEventsReference.push();
+            key = newEventRef.getKey();
+            ev.setKey(key);
+            newEventRef.setValue(ev);
+            addMemberToEvent(key, ev.getTeamDomain(), ev.getOwner(), ev.getStartDt());
+        } else {
+            // event created under the owner uid if no domain
+            DatabaseReference userEventsReference = PomodoroFirebaseContract.getUserPrivateEventReference(this.database, ev.getOwner());
+            DatabaseReference newEventRef = userEventsReference.push();
+            key = newEventRef.getKey();
+            ev.setKey(key);
+            newEventRef.setValue(ev);
+        }
+
+        return key;
+    }
+
+    public Task<Void> putEvent(Event ev) {
+        if (ev.getTeamDomain() == null || ev.getTeamDomain().isEmpty()) {
+            DatabaseReference eventRef = PomodoroFirebaseContract.getUserPrivateEventReference(this.database, ev.getOwner())
+                    .child(ev.getKey());
+            return eventRef.setValue(ev);
+        } else {
+            DatabaseReference eventRef = PomodoroFirebaseContract.getTeamEventsReference(this.database, ev.getTeamDomain())
+                    .child(ev.getKey());
+            return eventRef.setValue(ev);
+        }
+    }
+
+    public Task<Void> deleteEvent(Event ev) {
+        if (ev.getTeamDomain() == null || ev.getTeamDomain().isEmpty()) {
+            DatabaseReference eventRef = PomodoroFirebaseContract.getUserPrivateEventReference(this.database, ev.getOwner())
+                    .child(ev.getKey());
+            return eventRef.removeValue();
+        } else {
+            DatabaseReference eventRef = PomodoroFirebaseContract.getTeamEventsReference(this.database, ev.getTeamDomain())
+                    .child(ev.getKey());
+            return eventRef.removeValue();
+        }
+    }
+
+    public void addMemberToEvent(String eventKey, String team, String uid, Date joinDt) {
+        // add event key to USER_MEMBER_OF_EVENTS
+        DatabaseReference userMemberKey = PomodoroFirebaseContract.getUserEventsJoinedReference(this.database, uid, team);
+        userMemberKey.setValue(joinDt);
+
+        // add uid: joinDt to TEAM_EVENT_MEMBERS
+        DatabaseReference eventMemberKey = PomodoroFirebaseContract.getTeamEventMembersReference(this.database, team, eventKey)
+                .child(uid);
+        eventMemberKey.setValue(joinDt);
+    }
 }
