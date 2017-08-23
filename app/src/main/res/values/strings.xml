@@ -51,4 +51,24 @@
     <string name="confirm_delete_event_message">This will delete the record of this event.</string>
     <string name="confirm_delete_event_positive">Continue</string>
     <string name="confirm_delete_event_negative">Cancel</string>
+    <string name="title_activity_team_join">TeamJoinActivity</string>
+    <string name="find_team">Find Team</string>
+    <string name="action_search">Search</string>
+    <string name="hint_search_team">Enter a team name</string>
+    <string name="label_team_found" />
+    <string name="action_join">Request to Join</string>
+    <string name="team_search_not_found">No matching team</string>
+    <string name="team_search_not_selected">No team selected</string>
+    <string name="join_no_team">No team</string>
+    <string name="team_search_found">Team: %s</string>
+    <string name="join_team_admin">Manage Team</string>
+    <string name="join_already_member">Already joined</string>
+    <string name="join_new">Join team</string>
+    <string name="join_not_accepted">Applied</string>
+    <string name="action_teams">My Teams</string>
+    <string name="title_create_join_team">My Teams</string>
+    <string name="label_new_team">Enter a new team name</string>
+    <string name="create_team_title">Create a New Team</string>
+    <string name="team_create_failed">Unable to create team.</string>
+    <string name="title_activity_team_manage">Team Management</string>
 </resources>

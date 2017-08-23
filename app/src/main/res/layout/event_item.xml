@@ -13,6 +13,7 @@
         android:layout_margin="@dimen/small_layout_margin"
         app:cardElevation="@dimen/cardview_default_elevation"
         app:cardCornerRadius="@dimen/cardview_default_radius"
+        android:background="@drawable/item_selector"
         style="@style/CardStyle">
 
         <TextView

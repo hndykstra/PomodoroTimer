@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -24,10 +25,14 @@ import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.data.User;
 
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * TODO: add support for loading indicator
@@ -61,7 +66,7 @@ public class EventListActivity extends AppCompatActivity {
 
     private PomodoroFirebaseHelper database;
 
-    private RecyclerView recycler;
+    @BindView(R.id.recycler_events) RecyclerView recycler;
     private EventListAdapter adapter;
 
     private String teamDomain = null;
@@ -70,6 +75,7 @@ public class EventListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_list);
+        ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -77,7 +83,6 @@ public class EventListActivity extends AppCompatActivity {
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
 
-        recycler = (RecyclerView) findViewById(R.id.recycler_events);
         RecyclerView.LayoutManager lm = new GridLayoutManager(this, 1);
         recycler.setLayoutManager(lm);
 
@@ -142,7 +147,10 @@ public class EventListActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            startActivity(new Intent(EventListActivity.this, SettingsActivity.class));
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        } else if (id == R.id.action_teams) {
+            startActivity(new Intent(this, TeamJoinActivity.class));
             return true;
         }
 
@@ -152,6 +160,10 @@ public class EventListActivity extends AppCompatActivity {
     private void onLogin(final FirebaseUser user) {
         this.theUser = user;
         database = new PomodoroFirebaseHelper();
+        User userInst = new User();
+        userInst.setUid(theUser.getUid());
+        userInst.setDisplayName(theUser.getDisplayName());
+        database.createUser(userInst);
         // other things like kick off the
         DatabaseReference eventReference = database.getEventsReference(teamDomain, theUser.getUid());
         adapter = new EventListAdapter(eventReference, new EventListAdapter.EventSelectionListener() {
@@ -217,7 +229,6 @@ public class EventListActivity extends AppCompatActivity {
                 EventListActivity.this.createEvent(params);
             }
         });
-        loadingIndicator(false);
         fragment.show(getFragmentManager(), "CreateEventDlgFragment");
     }
 

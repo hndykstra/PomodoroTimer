@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.operationalsystems.pomodorotimer.TeamJoinActivity"
+    tools:showIn="@layout/activity_team_join">
+
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_join"
+        android:text="@string/action_join"
+        android:layout_marginLeft="@dimen/base_layout_margin"
+        android:layout_marginStart="@dimen/base_layout_margin"
+        android:layout_marginBottom="@dimen/base_layout_margin"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Team Found"
+        android:id="@+id/text_team_found"
+        app:layout_constraintBottom_toTopOf="@id/action_join"
+        app:layout_constraintLeft_toLeftOf="@id/action_join"
+        app:layout_constraintStart_toStartOf="@id/action_join"
+        android:layout_marginBottom="@dimen/small_layout_margin"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/action_search"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/text_team_found"
+        android:layout_marginTop="@dimen/base_layout_margin"
+        android:layout_marginBottom="@dimen/base_layout_margin"
+        android:layout_marginRight="@dimen/base_layout_margin"
+        android:layout_marginEnd="@dimen/base_layout_margin"
+        android:text="@string/action_search"/>
+
+    <EditText
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/edit_search_team"
+        android:hint="@string/hint_search_team"
+        android:inputType="text"
+        android:layout_marginRight="@dimen/small_layout_margin"
+        android:layout_marginEnd="@dimen/small_layout_margin"
+        app:layout_constraintStart_toStartOf="@id/action_join"
+        app:layout_constraintLeft_toLeftOf="@id/action_join"
+        app:layout_constraintEnd_toStartOf="@id/action_search"
+        app:layout_constraintBaseline_toBaselineOf="@id/action_search"
+        app:layout_constraintRight_toLeftOf="@+id/action_search" />
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_teams"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:padding="@dimen/small_layout_margin"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/edit_search_team">
+    </android.support.v7.widget.RecyclerView>
+
+
+</android.support.constraint.ConstraintLayout>

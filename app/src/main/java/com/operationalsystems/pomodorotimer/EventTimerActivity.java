@@ -34,8 +34,12 @@ import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.Date;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class EventTimerActivity extends AppCompatActivity {
     private static final String LOG_TAG = "EventTimerActivity";
@@ -109,13 +113,13 @@ public class EventTimerActivity extends AppCompatActivity {
     private PomodoroFirebaseHelper database;
 
     // UI elements
-    Toolbar toolbar;
-    TextView pomodoroName;
-    TextView timerCount;
-    TextView currentStatus;
-    Button toggleState;
-    Button intermission;
-    Button endEvent;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    @BindView(R.id.text_pomodoro_name) TextView pomodoroName;
+    @BindView(R.id.text_timer_count) TextView timerCount;
+    @BindView(R.id.text_current_status) TextView currentStatus;
+    @BindView(R.id.button_toggle_state) Button toggleState;
+    @BindView(R.id.button_intermission) Button intermission;
+    @BindView(R.id.button_end_event) Button endEvent;
 
     // timer management
     Handler timerHandler;
@@ -127,19 +131,12 @@ public class EventTimerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_timer);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
-
-        pomodoroName = (TextView) findViewById(R.id.text_pomodoro_name);
-        timerCount = (TextView) findViewById(R.id.text_timer_count);
-        currentStatus = (TextView) findViewById(R.id.text_current_status);
-        toggleState = (Button) findViewById(R.id.button_toggle_state);
-        intermission = (Button) findViewById(R.id.button_intermission);
-        endEvent = (Button) findViewById(R.id.button_end_event);
 
         toggleState.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -467,40 +464,36 @@ public class EventTimerActivity extends AppCompatActivity {
 
         if (this.eventKey != null && !this.eventKey.isEmpty()) {
             // query for the event data
-            database.queryEvent(eventKey, teamDomain, theUser.getUid(), new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if (dataSnapshot.exists()) {
+            database.queryEvent(eventKey, teamDomain, theUser.getUid())
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        Event e = (Event)t;
+                        e.setKey(eventKey);
+                        currentEvent = e;
+                        currentPomodoro = e.getCurrentPomodoro();
                         ActivityState initialState = ActivityState.WAITING;
-                        Event received = dataSnapshot.getValue(Event.class);
-                        received.setKey(eventKey);
-                        // could be null if this is a brand new event
-                        currentEvent = received;
-                        currentPomodoro = received.getCurrentPomodoro();
-                        if (currentPomodoro != null) {
-                            if (currentPomodoro.getStartDt() == null) {
-                                initialState = ActivityState.INTERMISSION;
-                                Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
-                            } else if (currentPomodoro.getBreakDt() == null) {
-                                initialState = ActivityState.ACTIVITY;
-                            } else if (currentPomodoro.getEndDt() == null) {
-                                initialState = ActivityState.BREAK;
-                            } else { // ended but no new one started
-                                initialState = ActivityState.INTERMISSION;
+                        if (currentPomodoro != null)
+                            if (currentPomodoro != null) {
+                                if (currentPomodoro.getStartDt() == null) {
+                                    initialState = ActivityState.INTERMISSION;
+                                    Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
+                                } else if (currentPomodoro.getBreakDt() == null) {
+                                    initialState = ActivityState.ACTIVITY;
+                                } else if (currentPomodoro.getEndDt() == null) {
+                                    initialState = ActivityState.BREAK;
+                                } else { // ended but no new one started
+                                    initialState = ActivityState.INTERMISSION;
+                                }
                             }
-                        }
                         updateState(initialState);
                         // if the state is activity or break, start the timer as the pomodoro is already running
                         if (initialState == ActivityState.ACTIVITY || initialState == ActivityState.BREAK || initialState == ActivityState.INTERMISSION) {
                             startTimer();
                         }
+                        return t;
                     }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-                }
-            });
+                });
         }
     }
 

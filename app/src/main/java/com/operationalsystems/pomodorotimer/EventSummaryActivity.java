@@ -23,8 +23,12 @@ import com.google.firebase.database.ValueEventListener;
 import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.Collection;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class EventSummaryActivity extends AppCompatActivity {
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
@@ -50,13 +54,13 @@ public class EventSummaryActivity extends AppCompatActivity {
     private Event event;
     private PomodoroListAdapter pomodoroAdapter;
     private EventMemberListAdapter memberAdapter;
-    private Toolbar toolbar;
-    private TextView totalTime;
-    private TextView totalActivity;
-    private TextView averageActivity;
-    private TextView averageBreak;
-    private RecyclerView pomodoroRecycler;
-    private RecyclerView memberRecycler;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    @BindView(R.id.label_time_total) TextView totalTime;
+    @BindView(R.id.label_activity_total) TextView totalActivity;
+    @BindView(R.id.label_activity_average) TextView averageActivity;
+    @BindView(R.id.label_break_average) TextView averageBreak;
+    @BindView(R.id.recycler_pomodoro_list) RecyclerView pomodoroRecycler;
+    @BindView(R.id.recycler_members) RecyclerView memberRecycler;
 
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authListener;
@@ -68,28 +72,21 @@ public class EventSummaryActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_summary);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
 
-        totalTime = (TextView) findViewById(R.id.label_time_total);
-        totalActivity = (TextView) findViewById(R.id.label_activity_total);
-        averageActivity = (TextView) findViewById(R.id.label_activity_average);
-        averageBreak = (TextView) findViewById(R.id.label_break_average);
-
-        pomodoroRecycler = (RecyclerView) findViewById(R.id.recycler_pomodoro_list);
         RecyclerView.LayoutManager lm1 = new GridLayoutManager(this, 1);
         pomodoroRecycler.setLayoutManager(lm1);
         pomodoroAdapter = new PomodoroListAdapter(null);
         pomodoroRecycler.setAdapter(pomodoroAdapter);
 
-        memberRecycler = (RecyclerView) findViewById(R.id.recycler_members);
         RecyclerView.LayoutManager lm2 = new GridLayoutManager(this, 1);
         memberRecycler.setLayoutManager(lm2);
-        memberAdapter = new EventMemberListAdapter(null);
+        memberAdapter = new EventMemberListAdapter(null, database);
         memberRecycler.setAdapter(memberAdapter);
 
         if (savedInstanceState != null) {
@@ -140,20 +137,15 @@ public class EventSummaryActivity extends AppCompatActivity {
 
     private void initializeEventState() {
         if (this.eventKey != null && !this.eventKey.isEmpty()) {
-            database.queryEvent(this.eventKey, teamDomain, theUser.getUid(), new ValueEventListener() {
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    if (dataSnapshot.exists()) {
-                        Event received = dataSnapshot.getValue(Event.class);
-                        bindToEvent(received);
+            database.queryEvent(this.eventKey, teamDomain, theUser.getUid())
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        Event e = (Event)t;
+                        bindToEvent(e);
+                        return t;
                     }
-                }
-
-                @Override
-                public void onCancelled(DatabaseError databaseError) {
-
-                }
-            });
+                });
         }
     }
 

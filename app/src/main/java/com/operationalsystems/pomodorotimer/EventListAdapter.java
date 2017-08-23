@@ -16,6 +16,9 @@ import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * Recycler list adapter for the event list view.
  */
@@ -71,13 +74,13 @@ public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAd
 
     static class EventItem extends RecyclerView.ViewHolder {
 
-        private TextView titleView;
+        @BindView(R.id.eventItemTitleView) TextView titleView;
         private Event boundEvent;
 
         public EventItem(View itemView) {
             super(itemView);
 
-            titleView = (TextView) itemView.findViewById(R.id.eventItemTitleView);
+            ButterKnife.bind(this, itemView);
         }
 
         void bind(Event event) {

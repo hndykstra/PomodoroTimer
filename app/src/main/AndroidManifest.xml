@@ -27,7 +27,7 @@
         <provider
             android:name=".data.PomodoroEventProvider"
             android:authorities="com.operationalsystems.pomodorotimer"
-            android:exported="false"/>
+            android:exported="false" />
 
         <activity
             android:name=".EventTimerActivity"
@@ -45,6 +45,19 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.operationalsystems.pomodorotimer.EventListActivity" />
         </activity>
+        <activity
+            android:name=".TeamJoinActivity"
+            android:label="@string/title_activity_team_join"
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="stateHidden">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.operationalsystems.pomodorotimer.EventListActivity" />
+        </activity>
+        <activity
+            android:name=".TeamManageActivity"
+            android:label="@string/title_activity_team_manage"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

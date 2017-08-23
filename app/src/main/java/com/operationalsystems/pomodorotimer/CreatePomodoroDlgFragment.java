@@ -11,6 +11,9 @@ import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.TextView;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * Dialog to start a new pomodoro as part of an existing event.
  */
@@ -31,10 +34,10 @@ public class CreatePomodoroDlgFragment extends DialogFragment {
         public void doCreatePomodoro(CreatePomodoroDlgFragment.CreatePomodoroParams params);
     }
 
-    private TextView eventName;
-    private EditText pomodoroName;
-    private NumberPicker activityLengthPicker;
-    private NumberPicker breakLengthPicker;
+    @BindView(R.id.label_event_name) TextView eventName;
+    @BindView(R.id.edit_pomodoro_name) EditText pomodoroName;
+    @BindView(R.id.pick_activity_length) NumberPicker activityLengthPicker;
+    @BindView(R.id.pick_break_length) NumberPicker breakLengthPicker;
     private CreatePomodoroParams params;
     private CreatePomodoroListener listener;
 
@@ -70,10 +73,7 @@ public class CreatePomodoroDlgFragment extends DialogFragment {
         builder.setTitle(R.string.create_pomodoro_title);
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.start_timer_content, null);
-        eventName = (TextView) view.findViewById((R.id.label_event_name));
-        pomodoroName = (EditText) view.findViewById(R.id.edit_pomodoro_name);
-        activityLengthPicker = (NumberPicker) view.findViewById(R.id.pick_activity_length);
-        breakLengthPicker = (NumberPicker) view.findViewById(R.id.pick_break_length);
+        ButterKnife.bind(this, view);
         initializeValues();
 
         builder.setView(view);

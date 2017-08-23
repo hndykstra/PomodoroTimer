@@ -10,13 +10,14 @@ import com.google.firebase.database.FirebaseDatabase;
 public class PomodoroFirebaseContract {
     public static final String USER_ROOT = "users";
     public static final String USER_EVENTS = "users/%s/privateEvents";
+    public static final String USER_EVENT_MEMBERS = "users/%s/privateEvents/%s/members";
     public static final String USER_MEMBER_OF_TEAM_EVENTS = "users/%s/eventsJoined/%s";
     public static final String USER_TEAMS = "users/%s/teams";
 
     public static final String TEAM_ROOT = "teams";
     public static final String TEAM_EVENTS = "teams/%s/events";
     public static final String TEAM_MEMBERS = "teams/%s/members";
-    public static final String TEAM_EVENT_MEMBERS = "teams/%s/eventMembers/%s";
+    public static final String TEAM_EVENT_MEMBERS = "teams/%s/events/%s/members";
 
 
     public static DatabaseReference getUsersReference(final FirebaseDatabase database) {
@@ -27,7 +28,7 @@ public class PomodoroFirebaseContract {
         return database.getReference(USER_ROOT + "/" + uid);
     }
 
-    public static DatabaseReference getUserPrivateEventReference(final FirebaseDatabase database, final String uid) {
+    public static DatabaseReference getUserPrivateEventsReference(final FirebaseDatabase database, final String uid) {
         return database.getReference(String.format(USER_EVENTS, uid));
     }
 
