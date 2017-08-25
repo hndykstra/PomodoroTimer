@@ -96,6 +96,15 @@ public class Team {
     }
 
     @Override
+    public int hashCode() {
+        return this.getDomainName().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Team: " + this.getDomainName();
+    }
+    @Override
     public boolean equals(Object o) {
         return (o instanceof Team && getDomainName() != null && getDomainName().equals(((Team) o).getDomainName()));
     }

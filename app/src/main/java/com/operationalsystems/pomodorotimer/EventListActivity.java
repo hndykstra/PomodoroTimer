@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v7.app.AppCompatActivity;
@@ -14,10 +15,16 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
@@ -25,7 +32,9 @@ import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.data.Team;
 import com.operationalsystems.pomodorotimer.data.User;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.text.DateFormat;
 import java.util.Arrays;
@@ -33,6 +42,7 @@ import java.util.Date;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnItemSelected;
 
 /**
  * TODO: add support for loading indicator
@@ -43,6 +53,45 @@ public class EventListActivity extends AppCompatActivity {
     public static final String PLACEHOLDER_TEAM = "test";
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
     public static final String STORE_TEAM_DOMAIN = "TeamDomain";
+
+    class TeamDisplay {
+
+        int stringResourceId;
+        String display;
+        Team team;
+
+        TeamDisplay(@NonNull Team t) {
+            team = t;
+            stringResourceId = -1;
+            display = team.getDomainName();
+        }
+
+        TeamDisplay(int resourceId) {
+            team = null;
+            stringResourceId = resourceId;
+            display = EventListActivity.this.getString(stringResourceId);
+        }
+
+        @Override
+        public String toString() {
+            return display;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            boolean isEqual = false;
+            if (o instanceof TeamDisplay) {
+                TeamDisplay other = (TeamDisplay)o;
+                if (team == null) {
+                    isEqual = other.team == null && stringResourceId == other.stringResourceId;
+                } else {
+                    isEqual = team.equals(other.team);
+                }
+            }
+
+            return isEqual;
+        }
+    }
 
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
@@ -66,8 +115,11 @@ public class EventListActivity extends AppCompatActivity {
 
     private PomodoroFirebaseHelper database;
 
+    @BindView(R.id.team_spinner) Spinner teamSpinner;
     @BindView(R.id.recycler_events) RecyclerView recycler;
     private EventListAdapter adapter;
+
+    private ArrayAdapter<TeamDisplay> teamListAdapter;
 
     private String teamDomain = null;
 
@@ -152,6 +204,8 @@ public class EventListActivity extends AppCompatActivity {
         } else if (id == R.id.action_teams) {
             startActivity(new Intent(this, TeamJoinActivity.class));
             return true;
+        } else if (id == R.id.action_logout) {
+            this.auth.signOut();
         }
 
         return super.onOptionsItemSelected(item);
@@ -164,15 +218,9 @@ public class EventListActivity extends AppCompatActivity {
         userInst.setUid(theUser.getUid());
         userInst.setDisplayName(theUser.getDisplayName());
         database.createUser(userInst);
-        // other things like kick off the
-        DatabaseReference eventReference = database.getEventsReference(teamDomain, theUser.getUid());
-        adapter = new EventListAdapter(eventReference, new EventListAdapter.EventSelectionListener() {
-            @Override
-            public void eventSelected(Event event) {
-                EventListActivity.this.eventSelected(event);
-            }
-        });
-        recycler.setAdapter(adapter);
+        // other things like kick off the data load
+        setTeamSelection(teamDomain);
+        viewTeamData(teamDomain);
     }
 
     private void onLogout() {
@@ -186,6 +234,7 @@ public class EventListActivity extends AppCompatActivity {
                         .setAvailableProviders(
                                 Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
                                         new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
+                        .setIsSmartLockEnabled(false)
                         .build(),
                 RESULT_AUTH_ID);
     }
@@ -232,7 +281,7 @@ public class EventListActivity extends AppCompatActivity {
         fragment.show(getFragmentManager(), "CreateEventDlgFragment");
     }
 
-    public void createEvent(CreateEventDlgFragment.CreateEventParams params) {
+    void createEvent(CreateEventDlgFragment.CreateEventParams params) {
         Log.d(LOG_TAG, "Create event " + params.eventName);
 
         final Date createDate = new Date();
@@ -241,5 +290,101 @@ public class EventListActivity extends AppCompatActivity {
                 params.activityMinutes, params.breakMinutes, teamDomain);
         String key = database.createEvent(newEvent);
         Log.d(LOG_TAG, "   created event at " + key);
+    }
+
+    @OnItemSelected(R.id.team_spinner)
+    private void spinnerChanged() {
+        TeamDisplay selected = (TeamDisplay)teamSpinner.getSelectedItem();
+        if (selected.team != null) {
+            viewTeamData(selected.team.getDomainName());
+        } else if (selected.stringResourceId == R.string.option_private_events) {
+            viewTeamData(null);
+        } else if (selected.stringResourceId == R.string.option_my_team) {
+            startActivity(new Intent(this, TeamJoinActivity.class));
+        }
+    }
+
+    private void setTeamSelection(String teamDomain) {
+        int selectionIndex = -1;
+        boolean isTeam = teamDomain != null && teamDomain.length() > 0;
+
+        for (int i=0 ; i < teamListAdapter.getCount() ; ++i) {
+            TeamDisplay td = teamListAdapter.getItem(i);
+            if (isTeam && td.team != null && teamDomain.equals(td.team.getDomainName())) {
+                selectionIndex = i;
+                break;
+            } if (!isTeam && td.stringResourceId == R.string.option_private_events) {
+                selectionIndex = i;
+                break;
+            }
+        }
+
+        if (selectionIndex != -1)
+            teamSpinner.setSelection(selectionIndex);
+    }
+
+    private void viewTeamData(String teamDomain) {
+        if (adapter != null) {
+            adapter.cleanup();
+        }
+
+        this.teamDomain = teamDomain;
+
+        DatabaseReference eventReference = database.getEventsReference(teamDomain, theUser.getUid());
+        adapter = new EventListAdapter(eventReference, new EventListAdapter.EventSelectionListener() {
+            @Override
+            public void eventSelected(Event event) {
+                EventListActivity.this.eventSelected(event);
+            }
+        });
+        recycler.setAdapter(adapter);
+    }
+
+    private void populateTeams() {
+        teamListAdapter = new ArrayAdapter<TeamDisplay>(this, R.layout.support_simple_spinner_dropdown_item);
+        teamListAdapter.add(new TeamDisplay(R.string.option_private_events));
+        teamListAdapter.add(new TeamDisplay(R.string.option_my_team));
+        teamSpinner.setAdapter(teamListAdapter);
+        database.subscribeUserTeams(theUser.getUid(), new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                String teamKey = dataSnapshot.getKey();
+                database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        Team team = (Team)t;
+                        teamListAdapter.add(new TeamDisplay(team));
+                        return t;
+                    }
+                });
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                // no-op
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                String teamKey = dataSnapshot.getKey();
+                for (int i = 0 ; i < teamListAdapter.getCount() ; ++i) {
+                    TeamDisplay td = teamListAdapter.getItem(i);
+                    if (td.team.getDomainName().equals(teamKey)) {
+                        teamListAdapter.remove(td);
+                        break;
+                    }
+                }
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                // no-op
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                // no-op
+            }
+        });
     }
 }

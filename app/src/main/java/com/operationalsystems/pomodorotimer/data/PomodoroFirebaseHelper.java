@@ -204,6 +204,45 @@ public class PomodoroFirebaseHelper {
         });
     }
 
+    public Promise quitTeam(final String teamDomain, final String uid) {
+        final Promise promise = new Promise();
+
+        // two things: remove the user from the team, and remove the team from the user
+        final DatabaseReference ref = database.getReference();
+        final String teamMemberPath = "teams/" + teamDomain + "/members/" + uid;
+        final String userTeamPath = "users/" + uid + "/teams/" + teamDomain;
+        final Map<String, Object> updates = new HashMap<>();
+        final DatabaseReference teamRef = PomodoroFirebaseContract.getTeamReference(database, teamDomain);
+        teamRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    updates.put(teamMemberPath, null);
+                    updates.put(userTeamPath, null);
+                    Task<Void> task = ref.updateChildren(updates);
+                    task.addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful())
+                                promise.reject(false);
+                            else
+                                promise.resolve(true);
+                        }
+                    });
+                } else {
+                    promise.reject("Team not found");
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                promise.reject(false);
+            }
+        });
+
+        return promise;
+    }
+
     /**
      * Adds a specified user to a specified team in specified role.
      * @param teamDomain Name of the team to add user to.

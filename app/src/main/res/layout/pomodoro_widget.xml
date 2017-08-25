@@ -1,0 +1,45 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="40dp"
+    android:background="@color/colorPrimaryDark"
+    android:padding="@dimen/widget_margin">
+
+    <ImageView
+        android:id="@+id/widget_icon"
+        android:src="@drawable/clockiconsmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="@dimen/small_layout_margin"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"/>
+
+    <TextView
+        android:id="@+id/widget_main_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="start"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@id/widget_icon"
+        android:layout_toEndOf="@id/widget_icon"
+        android:layout_marginTop="@dimen/tiny_layout_margin"
+        tools:text="Event Name here"
+        android:textAppearance="@style/PomodoroDisplayText"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/widget_status_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="start"
+        android:layout_toRightOf="@id/widget_icon"
+        android:layout_toEndOf="@id/widget_icon"
+        android:layout_below="@id/widget_main_text"
+        tools:text="Working"
+        android:textAppearance="@style/PomodoroDisplayText"
+        android:textSize="10sp" />
+
+</RelativeLayout>

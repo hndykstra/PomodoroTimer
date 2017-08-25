@@ -14,7 +14,7 @@ import java.util.Date;
 
 public class TeamMember {
     public enum Role {
-        Owner, Admin, Member, Applied, Disabled
+        None, Owner, Admin, Member, Applied, Disabled
     }
 
     private String memberUid;

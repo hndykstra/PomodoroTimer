@@ -1,7 +1,7 @@
 package com.operationalsystems.pomodorotimer;
 
+import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -16,23 +16,18 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.ValueEventListener;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
 import com.operationalsystems.pomodorotimer.data.TeamMember;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -71,19 +66,19 @@ public class TeamJoinActivity extends AppCompatActivity {
     @BindView(R.id.recycler_teams) RecyclerView teamRecycler;
     @BindView(R.id.text_team_found) TextView teamFound;
     @BindView(R.id.team_coordinator) CoordinatorLayout layout;
+    @BindView(R.id.toolbar) Toolbar toolbar;
 
     private Team activeTeam;
     private TeamMember activeMembership;
     private ChildEventListener myTeamsListener;
 
-    MyTeamsListAdapter adapter;
+    private MyTeamsListAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_team_join);
         ButterKnife.bind(this);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.title_create_join_team);
         setSupportActionBar(toolbar);
 
@@ -100,6 +95,10 @@ public class TeamJoinActivity extends AppCompatActivity {
                 showCreateNewTeam();
             }
         });
+
+        if (savedInstanceState != null) {
+            onRestoreInstanceState(savedInstanceState);
+        }
     }
 
     @Override
@@ -114,10 +113,10 @@ public class TeamJoinActivity extends AppCompatActivity {
                 @Override
                 public Object receive(Object o) {
                     Team t = (Team)o;
-                    activeTeam = t;
                     if (t != null) {
                         activeMembership = activeTeam.findTeamMember(theUser.getUid());
                     }
+                    bindActiveTeam(t);
                     return o;
                 }
             });
@@ -171,7 +170,11 @@ public class TeamJoinActivity extends AppCompatActivity {
         final String teamName = activeTeam.getDomainName();
         if (activeTeam != null) {
             if (activeMembership != null) {
-                // TODO: launch team management activity
+                if (ADMIN_ROLES.contains(activeMembership.getRole())) {
+                    Intent manageIntent = new Intent(this, TeamManageActivity.class);
+                    manageIntent.putExtra(TeamManageActivity.STORE_TEAM_DOMAIN, activeTeam.getDomainName());
+                    startActivity(manageIntent);
+                }
             } else {
                 database.joinTeam(teamName, theUser.getUid(), TeamMember.Role.Applied, theUser.getUid())
                     .then(new Promise.PromiseReceiver() {
@@ -235,7 +238,9 @@ public class TeamJoinActivity extends AppCompatActivity {
         String filterTerm = this.teamSearch.getText().toString();
         adapter.filter(filterTerm);
         if (filterTerm != null && filterTerm.length() > 0)
+        {
             selectFirst();
+        }
         this.teamRecycler.setAdapter(adapter);
         adapter.setTeams(Collections.<Team>emptyList());
         initializeSearchState();

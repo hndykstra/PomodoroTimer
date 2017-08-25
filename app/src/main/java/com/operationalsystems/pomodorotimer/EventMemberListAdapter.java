@@ -18,9 +18,13 @@ import com.operationalsystems.pomodorotimer.data.User;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * Recycler list adapter for event member list.
@@ -46,10 +50,14 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
 
     @Override
     public void onBindViewHolder(EventMemberItem holder, int position) {
-        if (position < 0 || position >= members.size()) {
-            throw new IndexOutOfBoundsException(String.valueOf(position));
+        if (members.size() == 0 && position == 0) {
+            holder.bind(null);
+        } else {
+            if (position < 0 || position >= members.size()) {
+                throw new IndexOutOfBoundsException(String.valueOf(position));
+            }
+            holder.bind(members.get(position));
         }
-        holder.bind(members.get(position));
     }
 
     public void setEvent(final Event ev) {
@@ -64,18 +72,15 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
             Promise.all(promises).then(new Promise.PromiseReceiver() {
                 @Override
                 public Object receive(Object t) {
-                    List<User> users = new ArrayList<>();
-                    Object[] array = (Object[])t;
-                    for (int i=0 ; i < array.length ; ++i) {
-                        users.add((User)array[i]);
-                    }
-                    Collections.sort(users, new Comparator<User>() {
+                    User[] array = (User[])t;
+                    members = new ArrayList<User>();
+                    members.addAll(Arrays.asList(array));
+                    Collections.sort(members, new Comparator<User>() {
                         @Override
                         public int compare(User o1, User o2) {
                             return o1.getDisplayName().compareTo(o2.getDisplayName());
                         }
                     });
-                    members = users;
                     notifyDataSetChanged();
 
                     return t;
@@ -86,20 +91,25 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
 
     @Override
     public int getItemCount() {
-        return members.size();
+        return members.size() == 0 ? 1 : members.size();
     }
 
     class EventMemberItem extends RecyclerView.ViewHolder {
 
-        private TextView memberName;
+        @BindView(R.id.text_member_name) TextView memberName;
 
         EventMemberItem(View itemView) {
             super(itemView);
-            memberName = (TextView) itemView.findViewById(R.id.text_member_name);
+            ButterKnife.bind(this, itemView);
         }
 
         void bind(User member) {
-            this.memberName.setText(member.getDisplayName());
+            if (member == null) {
+                String placeholder = itemView.getContext().getString(R.string.member_placeholder);
+                this.memberName.setText(placeholder);
+            } else {
+                this.memberName.setText(member.getDisplayName());
+            }
         }
     }
 }

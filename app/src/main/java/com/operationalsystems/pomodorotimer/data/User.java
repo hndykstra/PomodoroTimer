@@ -12,6 +12,8 @@ import java.util.Map;
 public class User {
     private String uid;
     private String displayName;
+    private String recentEvent;
+    private String recentTeam;
 
     @Exclude
     public String getUid() {
@@ -28,5 +30,21 @@ public class User {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getRecentEvent() {
+        return recentEvent;
+    }
+
+    public void setRecentEvent(String eventKey) {
+        recentEvent = eventKey;
+    }
+
+    public String getRecentTeam() {
+        return recentTeam;
+    }
+
+    public void setRecentTeam(String teamDomain) {
+        recentTeam = teamDomain;
     }
 }

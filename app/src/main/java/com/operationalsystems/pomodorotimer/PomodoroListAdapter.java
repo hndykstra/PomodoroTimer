@@ -68,6 +68,8 @@ public class PomodoroListAdapter extends RecyclerView.Adapter<PomodoroListAdapte
                 }
             });
         }
+
+        notifyDataSetChanged();
     }
 
     public class PomodoroItem extends RecyclerView.ViewHolder {
