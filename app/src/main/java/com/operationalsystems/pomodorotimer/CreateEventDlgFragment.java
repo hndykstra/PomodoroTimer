@@ -5,13 +5,13 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.preference.DialogPreference;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.NumberPicker;
-import android.widget.TextView;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * Fragment for creating a quick dialog to create a new event
@@ -32,9 +32,9 @@ public class CreateEventDlgFragment extends DialogFragment {
         public void doCreateEvent(CreateEventParams params);
     }
 
-    private EditText eventName;
-    private NumberPicker activityLengthPicker;
-    private NumberPicker breakLengthPicker;
+    @BindView(R.id.edit_event_name) EditText eventName;
+    @BindView(R.id.pick_activity_length) NumberPicker activityLengthPicker;
+    @BindView(R.id.pick_break_length) NumberPicker breakLengthPicker;
     private CreateEventParams params;
     private CreateEventListener listener;
 
@@ -70,9 +70,7 @@ public class CreateEventDlgFragment extends DialogFragment {
         builder.setTitle(R.string.create_event_title);
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.add_event_content, null);
-        eventName = (EditText) view.findViewById(R.id.edit_event_name);
-        activityLengthPicker = (NumberPicker) view.findViewById(R.id.pick_activity_length);
-        breakLengthPicker = (NumberPicker) view.findViewById(R.id.pick_break_length);
+        ButterKnife.bind(this, view);
         initializeValues();
 
         builder.setView(view);

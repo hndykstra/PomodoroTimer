@@ -11,37 +11,21 @@ import java.util.Date;
  */
 
 public class EventMember {
-    private int id;
-    private int eventId;
+    private transient String key;
     private String memberUid;
     private Date joinDt;
 
-    public EventMember(Cursor row) {
-        try {
-            id = row.getInt(PomodoroEventContract.EventMember.ID_INDEX);
-            eventId = row.getInt(PomodoroEventContract.EventMember.EVENT_ID_INDEX);
-            memberUid = row.getString(PomodoroEventContract.EventMember.MEMBER_INDEX);
-            String joinDtText = row.getString(PomodoroEventContract.EventMember.JOIN_DT_INDEX);
-            joinDt = DataUtil.dateFromDb(joinDtText);
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
+    public EventMember(String uid, Date joinDt) {
+        this.memberUid = uid;
+        this.joinDt = joinDt;
     }
 
-    public int getId() {
-        return id;
+    public String getKey() {
+        return key;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public int getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(int eventId) {
-        this.eventId = eventId;
+    public void setKey(String key) {
+        this.key = key;
     }
 
     public String getMemberUid() {
@@ -58,14 +42,5 @@ public class EventMember {
 
     public void setJoinDt(Date joinDt) {
         this.joinDt = joinDt;
-    }
-
-    public ContentValues asContent() {
-        ContentValues values = new ContentValues();
-        //values.put(PomodoroEventContract.EventMember.ID_COL, id);
-        values.put(PomodoroEventContract.EventMember.EVENT_FK_COL, eventId);
-        values.put(PomodoroEventContract.EventMember.MEMBER_UID_COL, memberUid);
-        values.put(PomodoroEventContract.EventMember.JOIN_DT_COL, DataUtil.dbFromDate(joinDt));
-        return values;
     }
 }

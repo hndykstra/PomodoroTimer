@@ -18,5 +18,6 @@
 
     <color name="pomodoroButtonBackground">@color/lightText</color>
     <color name="cardBackground">@color/lightText</color>
+    <color name="selectionBackground">@color/activityColor</color>
 
 </resources>

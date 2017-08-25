@@ -8,79 +8,85 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.google.firebase.database.DatabaseReference;
 import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 /**
  * Recycler list adapter for the event list view.
  */
-
-public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.EventItem> {
+public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAdapter.EventItem> {
 
     public interface EventSelectionListener {
         void eventSelected(Event event);
     }
 
     private EventSelectionListener listener;
-    private List<Event> eventList = new ArrayList<>();
 
-    @Override
-    public EventItem onCreateViewHolder(ViewGroup parent, int viewType) {
-        Context context = parent.getContext();
-        int resourceId = R.layout.event_item;
-        LayoutInflater inflater = LayoutInflater.from(context);
-        View v = inflater.inflate(resourceId, parent, false);
-
-        return new EventItem(v);
-    }
-
-    @Override
-    public void onBindViewHolder(EventItem holder, int position) {
-        if (position <0 || position >= eventList.size())
-            throw new IllegalArgumentException("Requested event item not found");
-
-        holder.bind(eventList.get(position));
-    }
-
-    @Override
-    public int getItemCount() {
-        return eventList.size();
-    }
-
-    public void setEvents(List<Event> events) {
-        this.eventList = (events != null ? events : new ArrayList<Event>());
-
-        notifyDataSetChanged();
-    }
-
-    public EventListAdapter(EventSelectionListener listener) {
+    public EventListAdapter(DatabaseReference reference, EventSelectionListener listener) {
+        super(Event.class, R.layout.event_item, EventListAdapter.EventItem.class, reference);
         this.listener = listener;
     }
 
-    public class EventItem extends RecyclerView.ViewHolder implements View.OnClickListener {
+    @Override
+    public void populateViewHolder(final EventItem holder, final Event event, final int position) {
+        if (event.getKey() == null) {
+            event.setKey(getRef(position).getKey());
+        }
 
-        private TextView titleView;
+        holder.bind(event);
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EventListAdapter.this.listener.eventSelected(event);
+            }
+        });
+    }
+
+    public Event getItem(int position) {
+        Event ev = (Event)super.getItem(position);
+        ev.setKey(this.getRef(position).getKey());
+        return ev;
+    }
+
+    public String getUniqueEventName(final String baseName) {
+        final ArrayList<String> names = new ArrayList<>();
+        for (int i = 0 ; i < getItemCount() ; ++i) {
+            Event ev = this.getItem(i);
+            names.add(ev.getName());
+        }
+
+        int count = 0;
+        String eventName = baseName;
+        while (names.contains(eventName)) {
+            ++count;
+            eventName = String.format("%s - %02d", baseName, count);
+        }
+        return eventName;
+    }
+
+    static class EventItem extends RecyclerView.ViewHolder {
+
+        @BindView(R.id.eventItemTitleView) TextView titleView;
         private Event boundEvent;
 
         public EventItem(View itemView) {
             super(itemView);
 
-            titleView = (TextView) itemView.findViewById(R.id.eventItemTitleView);
-            itemView.setOnClickListener(this);
+            ButterKnife.bind(this, itemView);
         }
 
-        public void bind(Event event) {
+        void bind(Event event) {
             this.boundEvent = event;
             titleView.setText(event.getName());
             titleView.setEnabled(event.isActive());
-        }
-
-        @Override
-        public void onClick(View v) {
-            EventListAdapter.this.listener.eventSelected(boundEvent);
         }
     }
 }

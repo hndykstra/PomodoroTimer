@@ -1,95 +1,158 @@
 package com.operationalsystems.pomodorotimer;
 
-import android.database.Cursor;
-import android.net.Uri;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
+import android.content.DialogInterface;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 import com.operationalsystems.pomodorotimer.data.Event;
-import com.operationalsystems.pomodorotimer.data.EventMember;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
-import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
+import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
-public class EventSummaryActivity extends AppCompatActivity  implements LoaderManager.LoaderCallbacks<Cursor> {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
+public class EventSummaryActivity extends AppCompatActivity {
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
 
     private static final String LOG_TAG = "EventSummaryActivity";
-    private static final int EVENT_MEMBER_LOADER_ID = 9047;
-    private static final int POMODORO_LIST_LOADER_ID = 9048;
-    private static final int EVENT_LOADER_ID = 9049;
-    private int eventId;
+
+
+    private class AuthListener implements FirebaseAuth.AuthStateListener {
+
+        @Override
+        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+            if (currentUser != null) {
+                onLogin(currentUser);
+            } else {
+                onLogout();
+            }
+        }
+    }
+
+    private String eventKey;
+    private String teamDomain;
     private Event event;
     private PomodoroListAdapter pomodoroAdapter;
     private EventMemberListAdapter memberAdapter;
-    private Toolbar toolbar;
-    private TextView totalTime;
-    private TextView totalActivity;
-    private TextView averageActivity;
-    private TextView averageBreak;
-    private RecyclerView pomodoroRecycler;
-    private RecyclerView memberRecycler;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    @BindView(R.id.label_time_total) TextView totalTime;
+    @BindView(R.id.label_activity_total) TextView totalActivity;
+    @BindView(R.id.label_activity_average) TextView averageActivity;
+    @BindView(R.id.label_break_average) TextView averageBreak;
+    @BindView(R.id.recycler_pomodoro_list) RecyclerView pomodoroRecycler;
+    @BindView(R.id.recycler_members) RecyclerView memberRecycler;
+
+    private FirebaseAuth auth;
+    private FirebaseAuth.AuthStateListener authListener;
+    private FirebaseUser theUser;
+
+    private PomodoroFirebaseHelper database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(LOG_TAG, "Summary activity onCreate");
         setContentView(R.layout.activity_event_summary);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        totalTime = (TextView) findViewById(R.id.label_time_total);
-        totalActivity = (TextView) findViewById(R.id.label_activity_total);
-        averageActivity = (TextView) findViewById(R.id.label_activity_average);
-        averageBreak = (TextView) findViewById(R.id.label_break_average);
+        auth = FirebaseAuth.getInstance();
+        authListener = new AuthListener();
 
-        pomodoroRecycler = (RecyclerView) findViewById(R.id.recycler_pomodoro_list);
         RecyclerView.LayoutManager lm1 = new GridLayoutManager(this, 1);
         pomodoroRecycler.setLayoutManager(lm1);
-        pomodoroAdapter = new PomodoroListAdapter();
+        pomodoroAdapter = new PomodoroListAdapter(null);
         pomodoroRecycler.setAdapter(pomodoroAdapter);
 
-        memberRecycler = (RecyclerView) findViewById(R.id.recycler_members);
         RecyclerView.LayoutManager lm2 = new GridLayoutManager(this, 1);
         memberRecycler.setLayoutManager(lm2);
-        memberAdapter = new EventMemberListAdapter();
+        memberAdapter = new EventMemberListAdapter(null, database);
         memberRecycler.setAdapter(memberAdapter);
 
         if (savedInstanceState != null) {
             onRestoreInstanceState(savedInstanceState);
         } else {
-            this.eventId = getIntent().getIntExtra(EventListActivity.EXTRA_EVENT_ID, -1);
-            initializeEventState();
+            this.eventKey = getIntent().getStringExtra(EventListActivity.EXTRA_EVENT_ID);
+            this.teamDomain = getIntent().getStringExtra(EventListActivity.STORE_TEAM_DOMAIN);
         }
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                confirmDelete();
+            }
+        });
     }
 
     @Override
     public void onRestoreInstanceState(Bundle inState) {
-        this.eventId = inState.getInt(EventListActivity.EXTRA_EVENT_ID);
-        initializeEventState();
+        this.eventKey = inState.getString(EventListActivity.EXTRA_EVENT_ID);
+        this.teamDomain = inState.getString(EventListActivity.STORE_TEAM_DOMAIN);
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putInt(EventListActivity.EXTRA_EVENT_ID, this.eventId);
+        outState.putString(EventListActivity.EXTRA_EVENT_ID, this.eventKey);
+        outState.putString(EventListActivity.STORE_TEAM_DOMAIN, this.teamDomain);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(LOG_TAG, "Summary activity onResume");
+        auth.addAuthStateListener(authListener);
+    }
+
+
+    private void onLogin(FirebaseUser user) {
+        this.theUser = user;
+        database = new PomodoroFirebaseHelper();
+        initializeEventState();
+    }
+
+    private void onLogout() {
+        // can't stay here if we are logged out
+        NavUtils.navigateUpFromSameTask(this);
     }
 
     private void initializeEventState() {
-        getSupportLoaderManager().initLoader(EVENT_LOADER_ID, null, this);
-        getSupportLoaderManager().initLoader(EVENT_MEMBER_LOADER_ID, null, this);
-        getSupportLoaderManager().initLoader(POMODORO_LIST_LOADER_ID, null, this);
+        if (this.eventKey != null && !this.eventKey.isEmpty()) {
+            database.queryEvent(this.eventKey, teamDomain, theUser.getUid())
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        Event e = (Event)t;
+                        bindToEvent(e);
+                        return t;
+                    }
+                });
+        }
     }
 
-    private void updateEventData(final Event event) {
+    private void bindToEvent(final Event event) {
         this.event = event;
         this.toolbar.setTitle(event.getName());
         if (event.getEndDt() != null) {
@@ -104,9 +167,12 @@ public class EventSummaryActivity extends AppCompatActivity  implements LoaderMa
         } else {
             this.totalTime.setText(getString(R.string.label_time_total, "*"));
         }
+        updatePomodoroData(event.getPomodoros().values());
+        this.pomodoroAdapter.setEvent(event);
+        this.memberAdapter.setEvent(event);
     }
 
-    private void updatePomodoroData(final List<Pomodoro> pomodoroList) {
+    private void updatePomodoroData(final Collection<Pomodoro> pomodoroList) {
         // compute totals for activity time and break time
         long totalActivityMsec = 0L;
         long totalBreakMsec = 0L;
@@ -159,53 +225,31 @@ public class EventSummaryActivity extends AppCompatActivity  implements LoaderMa
         }
     }
 
-    @Override
-    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        if (id == EVENT_MEMBER_LOADER_ID) {
-            final Uri queryUri = PomodoroEventContract.EventMember.uriForMembersByEvent(this.eventId);
-            final CursorLoader loader = new CursorLoader(this, queryUri, PomodoroEventContract.EventMember.EVENTMEMBER_COLS, null, null,
-                    PomodoroEventContract.EventMember.MEMBER_UID_COL);
-            return loader;
-        } else if (id == POMODORO_LIST_LOADER_ID) {
-            final Uri queryUri = PomodoroEventContract.Timer.uriForEventTimers(this.eventId);
-            final CursorLoader loader = new CursorLoader(this, queryUri, PomodoroEventContract.Timer.TIMER_COLS, null, null,
-                    PomodoroEventContract.Timer.POMODORO_SEQ_COL);
-            return loader;
-        } else if (id == EVENT_LOADER_ID) {
-            final Uri queryUri = PomodoroEventContract.Event.uriForEventId(this.eventId);
-            final CursorLoader loader = new CursorLoader(this, queryUri, PomodoroEventContract.Event.EVENT_COLS, null, null, null);
-            return loader;
-        }
-        return null;
+    private void confirmDelete() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirm_delete_event_title)
+                .setMessage(R.string.confirm_delete_event_message)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setPositiveButton(R.string.confirm_delete_event_positive, new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        deleteAndReturn();
+                    }})
+                .setNegativeButton(R.string.confirm_delete_event_negative, null).show();
     }
 
-    @Override
-    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        int loaderId = loader.getId();
-        if (loaderId == EVENT_MEMBER_LOADER_ID) {
-            final List<EventMember> memberList = new ArrayList<>();
-            while (data.moveToNext()) {
-                EventMember m = new EventMember(data);
-                memberList.add(m);
+    private void deleteAndReturn() {
+        database.deleteEvent(this.event).addOnCompleteListener(this, new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(Task<Void> task) {
+                if (task.isSuccessful()) {
+                    NavUtils.navigateUpFromSameTask(EventSummaryActivity.this);
+                } else {
+                    Snackbar.make(findViewById(R.id.main_layout),
+                            "Failed to delete event", Snackbar.LENGTH_LONG)
+                            .show();
+                }
             }
-            memberAdapter.setEventMembers(memberList);
-        } else if (loaderId == POMODORO_LIST_LOADER_ID) {
-            final List<Pomodoro> pomodoroList = new ArrayList<>();
-            while (data.moveToNext()) {
-                Pomodoro p = new Pomodoro(data);
-                pomodoroList.add(p);
-            }
-            pomodoroAdapter.setPomodoroList(pomodoroList);
-            updatePomodoroData(pomodoroList);
-        } else if (loaderId == EVENT_LOADER_ID) {
-            if (data.moveToNext()) {
-                updateEventData(new Event(data));
-            }
-        }
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-
+        });
     }
 }

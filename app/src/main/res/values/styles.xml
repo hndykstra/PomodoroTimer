@@ -48,6 +48,6 @@
     </style>
 
     <style name="CardStyle" parent="CardView">
-        <item name="cardBackgroundColor">@color/cardBackground</item>
+        <item name="cardBackgroundColor">@color/item_selector</item>
     </style>
 </resources>

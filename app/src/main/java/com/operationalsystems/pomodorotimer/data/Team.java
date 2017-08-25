@@ -3,8 +3,12 @@ package com.operationalsystems.pomodorotimer.data;
 import android.content.ContentValues;
 import android.database.Cursor;
 
+import com.google.firebase.database.Exclude;
+
 import java.text.ParseException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Domain object for a defined team domain.
@@ -14,36 +18,53 @@ public class Team {
     private Date createdDt;
     private String ownerUid;
     private boolean active;
+    private Map<String,TeamMember> members;
+
+    /**
+     * Default constructor for dynamic creation
+     */
+    public Team() {
+    }
 
     public Team(String name, String owner) {
         this.domainName = name;
         this.ownerUid = owner;
         this.active = true;
         this.createdDt = new Date();
+        this.members = new HashMap<>();
+        TeamMember ownerMember = new TeamMember(owner, TeamMember.Role.Owner, owner);
+        this.members.put(owner, ownerMember);
     }
 
-    public Team(Cursor row) {
-        try {
-            this.domainName = row.getString(PomodoroEventContract.TeamDomain.DOMAIN_INDEX);
-            this.ownerUid = row.getString(PomodoroEventContract.TeamDomain.OWNER_INDEX);
-            String createdText = row.getString(PomodoroEventContract.TeamDomain.CREATED_DT_INDEX);
-            this.createdDt = DataUtil.dateFromDb(createdText);
-            active = row.getInt(PomodoroEventContract.TeamDomain.ACTIVE_INDEX) != 0;
-        } catch (ParseException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
+    @Exclude
     public String getDomainName() {
         return domainName;
     }
 
+    public void setDomainName(String name) {
+        this.domainName = name;
+    }
+
+    @Exclude
     public Date getCreatedDt() {
         return createdDt;
     }
 
+    @Exclude
     public void setCreatedDt(Date createdDt) {
         this.createdDt = createdDt;
+    }
+
+    public String getCreatedTime() {
+        return DataUtil.dbFromDate(createdDt);
+    }
+
+    public void setCreatedTime(String time) {
+        try {
+            this.createdDt = DataUtil.dateFromDb(time);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException("Invalid createdDt", e);
+        }
     }
 
     public String getOwnerUid() {
@@ -62,12 +83,29 @@ public class Team {
         this.active = active;
     }
 
-    public ContentValues asContent() {
-        ContentValues values = new ContentValues();
-        values.put(PomodoroEventContract.TeamDomain.DOMAIN_COL, domainName);
-        values.put(PomodoroEventContract.TeamDomain.ACTIVE_COL, active ? 1 : 0);
-        values.put(PomodoroEventContract.TeamDomain.OWNER_COL, ownerUid);
-        values.put(PomodoroEventContract.TeamDomain.CREATED_DT_COL, DataUtil.dbFromDate(createdDt));
-        return values;
+    public Map<String, TeamMember> getMembers() {
+        return members;
+    }
+
+    public void setMembers(Map<String, TeamMember> members) {
+        this.members = members;
+    }
+
+    public TeamMember findTeamMember(final String uid) {
+        return this.members.get(uid);
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getDomainName().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Team: " + this.getDomainName();
+    }
+    @Override
+    public boolean equals(Object o) {
+        return (o instanceof Team && getDomainName() != null && getDomainName().equals(((Team) o).getDomainName()));
     }
 }

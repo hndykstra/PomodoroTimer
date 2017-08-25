@@ -24,14 +24,38 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.ValueEventListener;
 import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
 import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
+import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.Date;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class EventTimerActivity extends AppCompatActivity {
     private static final String LOG_TAG = "EventTimerActivity";
+
+    private class AuthListener implements FirebaseAuth.AuthStateListener {
+
+        @Override
+        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+            FirebaseUser currentUser = firebaseAuth.getCurrentUser();
+            if (currentUser != null) {
+                onLogin(currentUser);
+            } else {
+                onLogout();
+            }
+        }
+    }
 
     private static class TimerData {
         String formattedText;
@@ -75,20 +99,27 @@ public class EventTimerActivity extends AppCompatActivity {
     }
 
     // activity state information
-    private int eventId;
+    private String eventKey;
+    private String teamDomain;
     private Event currentEvent;
     private Pomodoro currentPomodoro;
     private ActivityState state;
     private boolean soundAlarm;
 
+    private FirebaseAuth auth;
+    private FirebaseAuth.AuthStateListener authListener;
+    private FirebaseUser theUser;
+
+    private PomodoroFirebaseHelper database;
+
     // UI elements
-    Toolbar toolbar;
-    TextView pomodoroName;
-    TextView timerCount;
-    TextView currentStatus;
-    Button toggleState;
-    Button intermission;
-    Button endEvent;
+    @BindView(R.id.toolbar) Toolbar toolbar;
+    @BindView(R.id.text_pomodoro_name) TextView pomodoroName;
+    @BindView(R.id.text_timer_count) TextView timerCount;
+    @BindView(R.id.text_current_status) TextView currentStatus;
+    @BindView(R.id.button_toggle_state) Button toggleState;
+    @BindView(R.id.button_intermission) Button intermission;
+    @BindView(R.id.button_end_event) Button endEvent;
 
     // timer management
     Handler timerHandler;
@@ -100,16 +131,12 @@ public class EventTimerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_timer);
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        pomodoroName = (TextView) findViewById(R.id.text_pomodoro_name);
-        timerCount = (TextView) findViewById(R.id.text_timer_count);
-        currentStatus = (TextView) findViewById(R.id.text_current_status);
-        toggleState = (Button) findViewById(R.id.button_toggle_state);
-        intermission = (Button) findViewById(R.id.button_intermission);
-        endEvent = (Button) findViewById(R.id.button_end_event);
+        auth = FirebaseAuth.getInstance();
+        authListener = new AuthListener();
 
         toggleState.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -135,32 +162,46 @@ public class EventTimerActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             onRestoreInstanceState(savedInstanceState);
         } else {
-            this.eventId = getIntent().getIntExtra(EventListActivity.EXTRA_EVENT_ID, -1);
-            initializeEventState();
+            this.eventKey = getIntent().getStringExtra(EventListActivity.EXTRA_EVENT_ID);
+            this.teamDomain = getIntent().getStringExtra(EventListActivity.STORE_TEAM_DOMAIN);
         }
     }
 
     @Override
     public void onRestoreInstanceState(Bundle inState) {
-        this.eventId = inState.getInt(EventListActivity.EXTRA_EVENT_ID);
-        initializeEventState();
+        this.eventKey = inState.getString(EventListActivity.EXTRA_EVENT_ID);
+        this.teamDomain = inState.getString(EventListActivity.STORE_TEAM_DOMAIN);
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putInt(EventListActivity.EXTRA_EVENT_ID, this.eventId);
+        outState.putString(EventListActivity.EXTRA_EVENT_ID, this.eventKey);
+        outState.putString(EventListActivity.STORE_TEAM_DOMAIN, this.teamDomain);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        if (authListener != null) {
+            auth.removeAuthStateListener(authListener);
+        }
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        this.soundAlarm = preferences.getBoolean(getString(R.string.pref_sound_alarm_key), true);
+        auth.addAuthStateListener(authListener);
+    }
+
+    private void onLogin(FirebaseUser user) {
+        this.theUser = user;
+        database = new PomodoroFirebaseHelper();
+        initializeEventState();
+    }
+
+    private void onLogout() {
+        // can't stay here if we are logged out
+        NavUtils.navigateUpFromSameTask(this);
     }
 
     private void updateState(ActivityState newState) {
@@ -210,6 +251,7 @@ public class EventTimerActivity extends AppCompatActivity {
     }
     private void updateTimerUI() {
         if (state == ActivityState.WAITING) {
+            // no-op
         } else if (state == ActivityState.ACTIVITY) {
             TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date());
             this.timerCount.setText(timerInfo.formattedText);
@@ -243,12 +285,12 @@ public class EventTimerActivity extends AppCompatActivity {
                 currentPomodoro.setBreakDt(closeTime);
             }
             currentPomodoro.setActive(false);
-            updatePomodoro();
+            update();
         }
         currentEvent.setActive(false);
         currentEvent.setEndDt(closeTime);
         Intent summaryIntent = new Intent(this, EventSummaryActivity.class);
-        summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getId());
+        summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getKey());
         updateEvent(summaryIntent);
     }
 
@@ -347,7 +389,7 @@ public class EventTimerActivity extends AppCompatActivity {
             // start a break;
             this.currentPomodoro.setBreakDt(toggleDate);
             updateState(ActivityState.BREAK);
-            updatePomodoro();
+            update();
             startTimer();
         } else if (state == ActivityState.BREAK
                 || state == ActivityState.WAITING
@@ -392,9 +434,8 @@ public class EventTimerActivity extends AppCompatActivity {
                 currentPomodoro.setBreakDt(startDate);
             }
             sequence = currentPomodoro.getSequence() + 1;
-            updatePomodoro();
         }
-        currentPomodoro = new Pomodoro(currentEvent.getId(), name, sequence, activityMinutes, breakMinutes, new Date());
+        currentPomodoro = new Pomodoro(currentEvent.getKey(), name, sequence, activityMinutes, breakMinutes, new Date());
         insertPomodoro();
         updateState(ActivityState.ACTIVITY);
         startTimer();
@@ -414,58 +455,45 @@ public class EventTimerActivity extends AppCompatActivity {
         }
         stopTimer();
         updateState(ActivityState.INTERMISSION);
-        updatePomodoro();
+        update();
         startTimer();
     }
 
     private void initializeEventState() {
         this.state = ActivityState.UNINITIALIZED;
-        if (this.eventId >= 0) {
-            AsyncTask<Void, Void, ActivityState> loadEventTask = new AsyncTask<Void, Void, ActivityState>() {
-                @Override
-                protected ActivityState doInBackground(Void... params) {
-                    Uri queryOneEvent = PomodoroEventContract.Event.uriForEventId(eventId);
-                    ActivityState returnState = ActivityState.WAITING;
-                    try (Cursor cursor = getContentResolver().query(queryOneEvent, PomodoroEventContract.Event.EVENT_COLS, null, null, null)) {
-                        if (cursor != null && cursor.moveToNext()) {
-                            currentEvent = new Event(cursor);
-                            Uri queryEventTimers = PomodoroEventContract.Timer.uriForEventTimers(eventId);
-                            try (Cursor timerCursor = getContentResolver().query(queryEventTimers, PomodoroEventContract.Timer.TIMER_COLS, null, null,
-                                    PomodoroEventContract.Timer.POMODORO_SEQ_COL)) {
-                                if (timerCursor != null && timerCursor.moveToLast()) {
-                                    currentPomodoro = new Pomodoro(timerCursor);
-                                    if (currentPomodoro.getStartDt() == null) {
-                                        // strange state where a pomodoro is created without a start time
-                                        returnState = ActivityState.INTERMISSION;
-                                    } else if (currentPomodoro.getBreakDt() == null) {
-                                        returnState = ActivityState.ACTIVITY;
-                                    } else if (currentPomodoro.getEndDt() == null) {
-                                        returnState = ActivityState.BREAK;
-                                    } else {
-                                        // current pomodoro ended but new one not started
-                                        returnState = ActivityState.INTERMISSION;
-                                    }
-                                } else {
-                                    currentPomodoro = null;
-                                    returnState = ActivityState.WAITING;
+
+        if (this.eventKey != null && !this.eventKey.isEmpty()) {
+            // query for the event data
+            database.queryEvent(eventKey, teamDomain, theUser.getUid())
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        Event e = (Event)t;
+                        e.setKey(eventKey);
+                        currentEvent = e;
+                        currentPomodoro = e.getCurrentPomodoro();
+                        ActivityState initialState = ActivityState.WAITING;
+                        if (currentPomodoro != null)
+                            if (currentPomodoro != null) {
+                                if (currentPomodoro.getStartDt() == null) {
+                                    initialState = ActivityState.INTERMISSION;
+                                    Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
+                                } else if (currentPomodoro.getBreakDt() == null) {
+                                    initialState = ActivityState.ACTIVITY;
+                                } else if (currentPomodoro.getEndDt() == null) {
+                                    initialState = ActivityState.BREAK;
+                                } else { // ended but no new one started
+                                    initialState = ActivityState.INTERMISSION;
                                 }
                             }
+                        updateState(initialState);
+                        // if the state is activity or break, start the timer as the pomodoro is already running
+                        if (initialState == ActivityState.ACTIVITY || initialState == ActivityState.BREAK || initialState == ActivityState.INTERMISSION) {
+                            startTimer();
                         }
+                        return t;
                     }
-                    return returnState;
-                }
-
-                @Override
-                protected void onPostExecute(ActivityState value) {
-                    updateState(value);
-                    // if the state is activity or break, start the timer as the pomodoro is already running
-                    if (state == ActivityState.ACTIVITY || state == ActivityState.BREAK || state == ActivityState.INTERMISSION) {
-                        startTimer();
-                    }
-                }
-            };
-
-            loadEventTask.execute();
+                });
         }
     }
 
@@ -474,63 +502,19 @@ public class EventTimerActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void updatePomodoro() {
-        AsyncTask<Pomodoro, Void, String> updateTask = new AsyncTask<Pomodoro, Void, String>() {
-            @Override
-            protected String doInBackground(Pomodoro... params) {
-                Pomodoro pomo = params[0];
-                ContentValues values = pomo.asContent();
-                Uri updatePomodoro = PomodoroEventContract.Timer.uriForInstance(pomo.getId());
-                getContentResolver().update(updatePomodoro, values, null, null);
-                return null;
-            }
-        };
-
-        updateTask.execute(currentPomodoro);
+    private void update() {
+        database.putEvent(currentEvent);
     }
 
     private void updateEvent(final Intent after) {
-        AsyncTask<Event, Void, Boolean> updateTask = new AsyncTask<Event, Void, Boolean>() {
-            @Override
-            protected Boolean doInBackground(Event... params) {
-                Event ev = params[0];
-                ContentValues values = ev.asContent();
-                Log.d(LOG_TAG, values.toString());
-                Uri updateEvent = PomodoroEventContract.Event.uriForEventId(ev.getId());
-                int updated = getContentResolver().update(updateEvent, values, null, null);
-                return Boolean.valueOf(updated == 1);
-            }
-
-            @Override
-            protected void onPostExecute(Boolean success) {
-                if (success) {
-                    if (after != null) {
-                        startActivity(after);
-                    }
-                } else {
-                    Log.d(LOG_TAG, "Event update failed");
-                }
-            }
-        };
-
-        final Event current = this.currentEvent;
-        Log.d(LOG_TAG, "Launcing event update");
-        updateTask.execute(current);
+        update();
+        if (after != null) {
+            startActivity(after);
+        }
     }
 
     private void insertPomodoro() {
-        AsyncTask<Pomodoro, Void, String> updateTask = new AsyncTask<Pomodoro, Void, String>() {
-            @Override
-            protected String doInBackground(Pomodoro... params) {
-                Pomodoro pomo = params[0];
-                ContentValues values = pomo.asContent();
-                Uri insertPomodoro = PomodoroEventContract.Timer.TIMER_URI;
-                Uri inserted = getContentResolver().insert(insertPomodoro, pomo.asContent());
-                pomo.setId(PomodoroEventContract.Timer.idFromInstanceUri(inserted));
-                return null;
-            }
-        };
-
-        updateTask.execute(currentPomodoro);
+        currentEvent.addPomodoro(currentPomodoro);
+        update();
     }
 }
