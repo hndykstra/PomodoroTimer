@@ -1,8 +1,10 @@
 package com.operationalsystems.pomodorotimer;
 
+import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.widget.RemoteViews;
 
@@ -50,7 +52,7 @@ public class PomodoroWidget extends AppWidgetProvider {
 
         private void queryCurrent(FirebaseUser user) {
             final String uid = user.getUid();
-            final PomodoroFirebaseHelper database = new PomodoroFirebaseHelper(FirebaseDatabase.getInstance());
+            final PomodoroFirebaseHelper database = new PomodoroFirebaseHelper();
 
             database.queryUser(uid).then(new Promise.PromiseReceiver() {
                 @Override
@@ -75,7 +77,7 @@ public class PomodoroWidget extends AppWidgetProvider {
         private void updateNotAvailable() {
             String notAvailable = context.getString(R.string.widget_not_available);
             for (int i=0 ; i < widgetIds.length ; ++i) {
-                updateAppWidget(context, widgetManager, widgetIds[i], notAvailable, "");
+                updateAppWidget(context, widgetManager, widgetIds[i], notAvailable, "", null);
             }
         }
 
@@ -96,16 +98,28 @@ public class PomodoroWidget extends AppWidgetProvider {
             } else {
                 mainText = context.getString((R.string.widget_none_active));
             }
+            for (int i=0 ; i < widgetIds.length ; ++i) {
+                updateAppWidget(context, widgetManager, widgetIds[i], mainText, status, e.getKey());
+            }
         }
     }
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
-                                int appWidgetId, String mainText, String statusText) {
+                                int appWidgetId, String mainText, String statusText, String eventKey) {
 
         // Construct the RemoteViews object
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.pomodoro_widget);
         views.setTextViewText(R.id.widget_main_text, mainText);
         views.setTextViewText(R.id.widget_status_text, statusText);
+
+        Intent activityIntent = (eventKey == null || eventKey.length() ==0)
+                ? new Intent(context, EventListActivity.class)
+                : new Intent(context, EventTimerActivity.class);
+
+        activityIntent.putExtra(EventListActivity.EXTRA_EVENT_ID, eventKey);
+
+        PendingIntent intent = PendingIntent.getActivity(context, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        views.setOnClickPendingIntent(R.id.widget_layout, intent);
 
         // Instruct the widget manager to update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);

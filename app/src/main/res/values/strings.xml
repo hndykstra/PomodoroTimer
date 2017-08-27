@@ -13,19 +13,19 @@
 
     <string name="label_activity_length">Pomodoro Length</string>
     <string name="label_break_length">Break Length</string>
-    <string name="label_event_name">Event Name</string>
+    <string name="label_event_name">Activity</string>
     <string name="title_activity_settings">Preferences</string>
 
-    <string name="create_event_title">Start a New Event</string>
+    <string name="create_event_title">Start a New Activity</string>
     <string name="create_pomodoro_title">Start a New Pomodoro</string>
     <string name="hint_event_name">Enter a name</string>
     <string name="create_event_button">Start</string>
     <string name="cancel_button">Cancel</string>
-    <string name="title_activity_event_timer">Event Timer</string>
+    <string name="title_activity_event_timer">Activity Timer</string>
     <string name="next_pomodoro_btn">Start Pomodoro</string>
     <string name="start_break_btn">Break</string>
     <string name="intermission_btn">Intermission</string>
-    <string name="end_event_btn">Finish Event</string>
+    <string name="end_event_btn">Finish Activity</string>
 
     <string name="activity_status_waiting"></string>
     <string name="activity_status_intermission">Intermission</string>
@@ -38,20 +38,20 @@
     <string name="pomodoro_activity_time">Activity: %s</string>
     <string name="hint_pomodoro_name">Name for the pomodoro</string>
     <string name="default_pomodoro_name">Pomodoro %1$d</string>
-    <string name="placeholder_event_nane">Current Event</string>
+    <string name="placeholder_event_nane">Current Activity</string>
     <string name="label_activity_average">Activity Average: %s</string>
     <string name="label_activity_total">Activity Total Time: %s</string>
     <string name="label_time_total">Total Time: %s</string>
     <string name="label_break_average">Break Time Average: %s</string>
     <string name="pomodoro_break_time">Break: %s</string>
-    <string name="title_summary">Event Summary</string>
-    <string name="main_activity_title">Pomodoro Events</string>
+    <string name="title_summary">Activity Summary</string>
+    <string name="main_activity_title">Pomodoro Activities</string>
 
-    <string name="confirm_delete_event_title">Delete Event</string>
-    <string name="confirm_delete_event_message">This will delete the record of this event.</string>
+    <string name="confirm_delete_event_title">Delete Activity</string>
+    <string name="confirm_delete_event_message">This will delete the record of this activity.</string>
     <string name="confirm_delete_event_positive">Continue</string>
     <string name="confirm_delete_event_negative">Cancel</string>
-    <string name="title_activity_team_join">TeamJoinActivity</string>
+    <string name="title_activity_team_join">Join or Create Teams</string>
     <string name="find_team">Find Team</string>
     <string name="action_search">Search</string>
     <string name="hint_search_team">Enter a team name</string>
@@ -74,16 +74,19 @@
     <string name="label_team_owner">Owner: %s</string>
     <string name="msg_team_update_failed">Team update failed.</string>
     <string name="action_logout">Log off</string>
-    <string name="member_placeholder">Private event</string>
-    <string name="option_private_events">Personal events</string>
+    <string name="member_placeholder">Private activity</string>
+    <string name="option_private_events">Personal activities</string>
     <string name="option_my_team">Create or join teams ...</string>
-    <string name="label_view_by_team">Show events for:</string>
     <string name="appwidget_text">EXAMPLE</string>
     <string name="add_widget">Add widget</string>
     <string name="widget_not_available">Not logged in</string>
-    <string name="widget_none_active">No active event</string>
+    <string name="widget_none_active">No active activity</string>
     <string name="widget_status_waiting">Not started</string>
     <string name="widget_status_intermission">Intermission</string>
     <string name="widget_status_break">On break</string>
     <string name="widget_status_activity">Working</string>
+    <string name="next_pomodoro_over">Activity ended</string>
+    <string name="action_view_summary">View summary</string>
+    <string name="activity_status_ended">Finished</string>
+    <string name="role_view_label">(%s)</string>
 </resources>

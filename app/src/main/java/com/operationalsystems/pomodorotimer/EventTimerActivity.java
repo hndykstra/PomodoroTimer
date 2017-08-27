@@ -67,7 +67,8 @@ public class EventTimerActivity extends AppCompatActivity {
         BREAK,
         ACTIVITY,
         INTERMISSION,
-        WAITING
+        WAITING,
+        ENDED
     }
 
     private class AlarmReceiver implements Runnable {
@@ -105,10 +106,12 @@ public class EventTimerActivity extends AppCompatActivity {
     private Pomodoro currentPomodoro;
     private ActivityState state;
     private boolean soundAlarm;
+    private boolean isOwner;
 
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authListener;
     private FirebaseUser theUser;
+    private ChildEventListener pomodoroListener;
 
     private PomodoroFirebaseHelper database;
 
@@ -213,35 +216,47 @@ public class EventTimerActivity extends AppCompatActivity {
             } else {
                 pomodoroName.setText(currentPomodoro.getName());
             }
-            if (state == ActivityState.WAITING) {
+            if (state == ActivityState.ENDED) {
+                // only really possible if reached this by some external intent
+                // or the event is ended by another user while on this screen
                 this.intermission.setEnabled(false);
-                this.toggleState.setEnabled(true);
-                this.toggleState.setText(R.string.next_pomodoro_btn);
+                this.toggleState.setEnabled(false);
+                this.toggleState.setText(R.string.next_pomodoro_over);
                 this.endEvent.setEnabled(true);
+                this.endEvent.setText(R.string.action_view_summary);
+                this.currentStatus.setText(R.string.activity_status_ended);
+                this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.waitingColor));
+                this.timerCount.setText(R.string.blank_timer);
+                this.timerCount.setTextColor(ContextCompat.getColor(this, R.color.waitingTimerColor));
+            } else if (state == ActivityState.WAITING) {
+                this.intermission.setEnabled(false);
+                this.toggleState.setEnabled(isOwner);
+                this.toggleState.setText(R.string.next_pomodoro_btn);
+                this.endEvent.setEnabled(isOwner);
                 this.currentStatus.setText(R.string.activity_status_waiting);
                 this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.waitingColor));
                 this.timerCount.setText(R.string.blank_timer);
                 this.timerCount.setTextColor(ContextCompat.getColor(this, R.color.waitingTimerColor));
             } else if (state == ActivityState.ACTIVITY) {
-                this.intermission.setEnabled(true);
-                this.toggleState.setEnabled(true);
+                this.intermission.setEnabled(isOwner);
+                this.toggleState.setEnabled(isOwner);
                 this.toggleState.setText(R.string.start_break_btn);
-                this.endEvent.setEnabled(true);
+                this.endEvent.setEnabled(isOwner);
                 this.currentStatus.setText(R.string.activity_status_activity);
                 this.timerCount.setTextColor(ContextCompat.getColor(this, R.color.activeTimerColor));
             } else if (state == ActivityState.INTERMISSION) {
                 this.intermission.setEnabled(false);
-                this.toggleState.setEnabled(true);
+                this.toggleState.setEnabled(isOwner);
                 this.toggleState.setText(R.string.next_pomodoro_btn);
-                this.endEvent.setEnabled(true);
+                this.endEvent.setEnabled(isOwner);
                 this.currentStatus.setText(R.string.activity_status_intermission);
                 this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.waitingColor));
                 this.timerCount.setTextColor(ContextCompat.getColor(this, R.color.waitingTimerColor));
             } else if (state == ActivityState.BREAK) {
-                this.intermission.setEnabled(true);
-                this.toggleState.setEnabled(true);
+                this.intermission.setEnabled(isOwner);
+                this.toggleState.setEnabled(isOwner);
                 this.toggleState.setText(R.string.next_pomodoro_btn);
-                this.endEvent.setEnabled(true);
+                this.endEvent.setEnabled(isOwner);
                 this.currentStatus.setText(R.string.activity_status_break);
                 this.timerCount.setTextColor(ContextCompat.getColor(this, R.color.breakTimerColor));
             }
@@ -250,7 +265,7 @@ public class EventTimerActivity extends AppCompatActivity {
         }
     }
     private void updateTimerUI() {
-        if (state == ActivityState.WAITING) {
+        if (state == ActivityState.WAITING || state == ActivityState.ENDED) {
             // no-op
         } else if (state == ActivityState.ACTIVITY) {
             TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date());
@@ -276,22 +291,26 @@ public class EventTimerActivity extends AppCompatActivity {
     }
 
     private void closeEvent() {
-        Date closeTime = new Date();
-        if (currentPomodoro != null) {
-            if (currentPomodoro.getEndDt() == null) {
-                currentPomodoro.setEndDt(closeTime);
-            }
-            if (currentPomodoro.getBreakDt() == null) {
-                currentPomodoro.setBreakDt(closeTime);
-            }
-            currentPomodoro.setActive(false);
-            update();
-        }
-        currentEvent.setActive(false);
-        currentEvent.setEndDt(closeTime);
         Intent summaryIntent = new Intent(this, EventSummaryActivity.class);
         summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getKey());
-        updateEvent(summaryIntent);
+        if (isOwner && state != ActivityState.ENDED) {
+            Date closeTime = new Date();
+            if (currentPomodoro != null) {
+                if (currentPomodoro.getEndDt() == null) {
+                    currentPomodoro.setEndDt(closeTime);
+                }
+                if (currentPomodoro.getBreakDt() == null) {
+                    currentPomodoro.setBreakDt(closeTime);
+                }
+                currentPomodoro.setActive(false);
+                update();
+            }
+            currentEvent.setActive(false);
+            currentEvent.setEndDt(closeTime);
+            updateEvent(summaryIntent);
+        } else {
+            startActivity(summaryIntent);
+        }
     }
 
     /*
@@ -383,62 +402,70 @@ public class EventTimerActivity extends AppCompatActivity {
     }
 
     private void togglePomodoro() {
-        Date toggleDate = new Date();
-        if (state == ActivityState.ACTIVITY) {
-            stopTimer();
-            // start a break;
-            this.currentPomodoro.setBreakDt(toggleDate);
-            updateState(ActivityState.BREAK);
-            update();
-            startTimer();
-        } else if (state == ActivityState.BREAK
-                || state == ActivityState.WAITING
-                || state == ActivityState.INTERMISSION) {
-            showNextPomodoro();
+        if (isOwner) {
+            Date toggleDate = new Date();
+            if (state == ActivityState.ACTIVITY) {
+                // UI updates will happen when listener gets notified
+                // stopTimer();
+                // start a break;
+                this.currentPomodoro.setBreakDt(toggleDate);
+                //updateState(ActivityState.BREAK);
+                // update();
+                // startTimer();
+            } else if (state == ActivityState.BREAK
+                    || state == ActivityState.WAITING
+                    || state == ActivityState.INTERMISSION) {
+                showNextPomodoro();
+            }
         }
     }
 
     private void showNextPomodoro() {
-        Bundle args = new Bundle();
-        int nextSequence = 1;
-        if (currentPomodoro != null) {
-            nextSequence = currentPomodoro.getSequence() + 1;
-        }
-        String name = getString(R.string.default_pomodoro_name, nextSequence);
-        args.putString(CreatePomodoroDlgFragment.BUNDLE_KEY_EVENTNAME, this.currentEvent.getName());
-        args.putString(CreatePomodoroDlgFragment.BUNDLE_KEY_POMODORONAME, name);
-        args.putInt(CreatePomodoroDlgFragment.BUNDLE_KEY_ACTIVITY_LENGTH, this.currentEvent.getActivityMinutes());
-        args.putInt(CreatePomodoroDlgFragment.BUNDLE_KEY_BREAK_LENGTH, this.currentEvent.getBreakMinutes());
-        CreatePomodoroDlgFragment fragment = new CreatePomodoroDlgFragment();
-        fragment.setArguments(args);
-        fragment.setListener(new CreatePomodoroDlgFragment.CreatePomodoroListener() {
-            @Override
-            public void doCreatePomodoro(CreatePomodoroDlgFragment.CreatePomodoroParams params) {
-                EventTimerActivity.this.startNewPomodoro(params.pomodoroName, params.activityMinutes, params.breakMinutes);
+        if (isOwner) {
+            Bundle args = new Bundle();
+            int nextSequence = 1;
+            if (currentPomodoro != null) {
+                nextSequence = currentPomodoro.getSequence() + 1;
             }
-        });
-        fragment.show(getFragmentManager(), "CreateEventDlgFragment");
+            String name = getString(R.string.default_pomodoro_name, nextSequence);
+            args.putString(CreatePomodoroDlgFragment.BUNDLE_KEY_EVENTNAME, this.currentEvent.getName());
+            args.putString(CreatePomodoroDlgFragment.BUNDLE_KEY_POMODORONAME, name);
+            args.putInt(CreatePomodoroDlgFragment.BUNDLE_KEY_ACTIVITY_LENGTH, this.currentEvent.getActivityMinutes());
+            args.putInt(CreatePomodoroDlgFragment.BUNDLE_KEY_BREAK_LENGTH, this.currentEvent.getBreakMinutes());
+            CreatePomodoroDlgFragment fragment = new CreatePomodoroDlgFragment();
+            fragment.setArguments(args);
+            fragment.setListener(new CreatePomodoroDlgFragment.CreatePomodoroListener() {
+                @Override
+                public void doCreatePomodoro(CreatePomodoroDlgFragment.CreatePomodoroParams params) {
+                    EventTimerActivity.this.startNewPomodoro(params.pomodoroName, params.activityMinutes, params.breakMinutes);
+                }
+            });
+            fragment.show(getFragmentManager(), "CreateEventDlgFragment");
+        }
     }
 
     // invoke when new pomo dialog is accepted
     private void startNewPomodoro(String name, int activityMinutes, int breakMinutes) {
-        stopTimer();
-        Date startDate = new Date();
-        int sequence = 1;
-        if (currentPomodoro != null) {
-            currentPomodoro.setActive(false);
-            if (currentPomodoro.getEndDt() == null) {
-                currentPomodoro.setEndDt(startDate);
+        if (isOwner) {
+            // stopTimer();
+            Date startDate = new Date();
+            int sequence = 1;
+            if (currentPomodoro != null) {
+                currentPomodoro.setActive(false);
+                if (currentPomodoro.getEndDt() == null) {
+                    currentPomodoro.setEndDt(startDate);
+                }
+                if (currentPomodoro.getBreakDt() == null) {
+                    currentPomodoro.setBreakDt(startDate);
+                }
+                sequence = currentPomodoro.getSequence() + 1;
             }
-            if (currentPomodoro.getBreakDt() == null) {
-                currentPomodoro.setBreakDt(startDate);
-            }
-            sequence = currentPomodoro.getSequence() + 1;
+            currentPomodoro = new Pomodoro(currentEvent.getKey(), name, sequence, activityMinutes, breakMinutes, new Date());
+            insertPomodoro();
+            // HMD this should happen in onChildAdded
+            //updateState(ActivityState.ACTIVITY);
+            //startTimer();
         }
-        currentPomodoro = new Pomodoro(currentEvent.getKey(), name, sequence, activityMinutes, breakMinutes, new Date());
-        insertPomodoro();
-        updateState(ActivityState.ACTIVITY);
-        startTimer();
     }
 
     private void startIntermission() {
@@ -453,10 +480,11 @@ public class EventTimerActivity extends AppCompatActivity {
             currentPomodoro.setEndDt(startTime);
             currentPomodoro.setActive(false);
         }
-        stopTimer();
-        updateState(ActivityState.INTERMISSION);
-        update();
-        startTimer();
+        // UI updates should happen when the listener gets notified
+        // stopTimer();
+        // updateState(ActivityState.INTERMISSION);
+        // update();
+        // startTimer();
     }
 
     private void initializeEventState() {
@@ -471,26 +499,10 @@ public class EventTimerActivity extends AppCompatActivity {
                         Event e = (Event)t;
                         e.setKey(eventKey);
                         currentEvent = e;
+                        isOwner = theUser.getUid().equals(currentEvent.getOwner());
                         currentPomodoro = e.getCurrentPomodoro();
-                        ActivityState initialState = ActivityState.WAITING;
-                        if (currentPomodoro != null)
-                            if (currentPomodoro != null) {
-                                if (currentPomodoro.getStartDt() == null) {
-                                    initialState = ActivityState.INTERMISSION;
-                                    Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
-                                } else if (currentPomodoro.getBreakDt() == null) {
-                                    initialState = ActivityState.ACTIVITY;
-                                } else if (currentPomodoro.getEndDt() == null) {
-                                    initialState = ActivityState.BREAK;
-                                } else { // ended but no new one started
-                                    initialState = ActivityState.INTERMISSION;
-                                }
-                            }
-                        updateState(initialState);
-                        // if the state is activity or break, start the timer as the pomodoro is already running
-                        if (initialState == ActivityState.ACTIVITY || initialState == ActivityState.BREAK || initialState == ActivityState.INTERMISSION) {
-                            startTimer();
-                        }
+                        bindToEvent();
+                        refreshUI();
                         return t;
                     }
                 });
@@ -513,8 +525,91 @@ public class EventTimerActivity extends AppCompatActivity {
         }
     }
 
+    private void refreshUI() {
+        // process possible change in the current pomodoro
+        currentPomodoro = currentEvent.getCurrentPomodoro();
+        ActivityState state = determineState();
+
+        updateState(state);
+        // if the state is activity or break, start the timer as the pomodoro is already running
+        if (state == ActivityState.ACTIVITY || state == ActivityState.BREAK || state == ActivityState.INTERMISSION) {
+            startTimer();
+        } else { // other states do not have a timer running
+            stopTimer();
+        }
+    }
+
+    private ActivityState determineState() {
+        ActivityState currentState = ActivityState.WAITING;
+
+        if (currentPomodoro != null) {
+            if (currentPomodoro.getStartDt() == null) {
+                currentState = ActivityState.INTERMISSION;
+                Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
+            } else if (currentPomodoro.getBreakDt() == null) {
+                currentState = ActivityState.ACTIVITY;
+            } else if (currentPomodoro.getEndDt() == null) {
+                currentState = ActivityState.BREAK;
+            } else { // ended but no new one started
+                if (currentEvent.getEndDt() == null)
+                    currentState = ActivityState.INTERMISSION;
+                else
+                    currentState = ActivityState.ENDED;
+            }
+        }
+
+        return currentState;
+    }
+
     private void insertPomodoro() {
         currentEvent.addPomodoro(currentPomodoro);
         update();
+    }
+
+    private void unbindEvent() {
+        if (this.currentEvent != null)
+            database.unsubscribePomodoros(this.currentEvent, pomodoroListener);
+    }
+
+    private void bindToEvent() {
+        if (this.currentEvent != null) {
+            pomodoroListener = new ChildEventListener() {
+                @Override
+                public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                    Log.d(LOG_TAG, "pomodoro onChildAdded " + dataSnapshot.getKey());
+                    Pomodoro p = dataSnapshot.getValue(Pomodoro.class);
+                    currentEvent.addPomodoro(p);
+                    refreshUI();
+                }
+
+                @Override
+                public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                    Log.d(LOG_TAG, "pomodoro onChildChanged " + dataSnapshot.getKey());
+                    Pomodoro p = dataSnapshot.getValue(Pomodoro.class);
+                    currentEvent.addPomodoro(p);
+                    refreshUI();
+                }
+
+                @Override
+                public void onChildRemoved(DataSnapshot dataSnapshot) {
+                    Log.d(LOG_TAG, "pomodoro onChildRemoved " + dataSnapshot.getKey());
+                    String pomoKey = dataSnapshot.getKey();
+                    currentEvent.removePomodoro(pomoKey);
+                    refreshUI();
+                }
+
+                @Override
+                public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                    // no logic to handle this.
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+                    // no-op
+                }
+            };
+
+            database.subscribePomodoros(currentEvent, pomodoroListener);
+        }
     }
 }

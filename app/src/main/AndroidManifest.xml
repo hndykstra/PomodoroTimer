@@ -2,6 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.operationalsystems.pomodorotimer">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
+    <uses-permission
+        android:name="android.permission.AUTHENTICATE_ACCOUNTS"
+        android:maxSdkVersion="22" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/clockicon"
@@ -23,12 +30,6 @@
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
             android:theme="@style/AppTheme.NoActionBar" />
-
-        <provider
-            android:name=".data.PomodoroEventProvider"
-            android:authorities="com.operationalsystems.pomodorotimer"
-            android:exported="false" />
-
         <activity
             android:name=".EventTimerActivity"
             android:label="@string/title_activity_event_timer"
@@ -72,6 +73,34 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/pomodoro_widget_info" />
         </receiver>
+
+        <provider
+            android:name=".data.PomodoroEventProvider"
+            android:authorities="com.operationalsystems.pomodorotimer"
+            android:exported="false"
+            android:syncable="true" />
+
+        <service
+            android:name=".service.KeyDataSyncService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter"/>
+        </service>
+        <service
+            android:name=".service.KeyDataAuthService"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/syncauthenticator" />
+        </service>
     </application>
 
 </manifest>

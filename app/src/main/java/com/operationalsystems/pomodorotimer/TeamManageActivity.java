@@ -111,8 +111,8 @@ public class TeamManageActivity extends AppCompatActivity {
         database = new PomodoroFirebaseHelper();
         adapter = new TeamMemberAdapter(null, database, new TeamMemberAdapter.RoleChangeListener() {
             @Override
-            public boolean onRoleChange(TeamMember member, TeamMember.Role newValue) {
-                return processRoleChange(member, newValue);
+            public boolean onRoleChange(String uid, TeamMember member, TeamMember.Role newValue) {
+                return processRoleChange(uid, member, newValue);
             }
         });
         this.teamMembers.setAdapter(adapter);
@@ -132,22 +132,22 @@ public class TeamManageActivity extends AppCompatActivity {
         }
     }
 
-    private boolean processRoleChange(final TeamMember member, final TeamMember.Role newRole) {
+    private boolean processRoleChange(final String uid, final TeamMember member, final TeamMember.Role newRole) {
         if (newRole == TeamMember.Role.None) {
             // delete the team member and return false;
-            database.quitTeam(team.getDomainName(), member.getMemberUid());
+            database.quitTeam(team.getDomainName(), uid);
             return false;
         } else if (newRole != member.getRole()) {
             // save the change and return true;
             final TeamMember.Role oldRole = member.getRole();
             member.setRole(newRole);
-            database.joinTeam(team.getDomainName(), member.getMemberUid(), newRole, theUser.getUid())
+            database.joinTeam(team.getDomainName(), uid, newRole, theUser.getUid())
                 .orElse(new Promise.PromiseCatcher() {
                     @Override
                     public void catchError(Object reason) {
                         Snackbar.make(coordinatorLayout, R.string.msg_team_update_failed, Snackbar.LENGTH_LONG);
                         member.setRole(oldRole);
-                        adapter.updateMember(member);
+                        adapter.updateMember(uid, member);
                     }
                 });
             return true;

@@ -235,6 +235,7 @@ public class TeamJoinActivity extends AppCompatActivity {
                 bindActiveTeam(team);
             }
         });
+        adapter.setUser(theUser.getUid());
         String filterTerm = this.teamSearch.getText().toString();
         adapter.filter(filterTerm);
         if (filterTerm != null && filterTerm.length() > 0)

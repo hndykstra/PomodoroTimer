@@ -35,7 +35,7 @@ import butterknife.ButterKnife;
 public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.TeamMemberItem> {
     public interface RoleChangeListener {
         /** Return false to veto the change? */
-        public boolean onRoleChange(TeamMember member, TeamMember.Role newValue);
+        public boolean onRoleChange(String uid, TeamMember member, TeamMember.Role newValue);
     }
 
     private RoleChangeListener listener;
@@ -50,8 +50,7 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
         setTeam(theTeam);
     }
 
-    public void updateMember(TeamMember member) {
-        String uid = member.getMemberUid();
+    public void updateMember(String uid, TeamMember member) {
         for (int i=0 ; i < members.size() ; ++i) {
             if (uid.equals(members.get(i).getUid())) {
                 notifyItemChanged(i);
@@ -73,9 +72,10 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
             Promise.all(promises).then(new Promise.PromiseReceiver() {
                 @Override
                 public Object receive(Object t) {
-                    User[] users = (User[])t;
+                    Object[] users = (Object[])t;
                     members = new ArrayList<User>();
-                    members.addAll(Arrays.asList(users));
+                    for (int i=0 ; i < users.length ; ++i)
+                        members.add((User)users[i]);
                     Collections.sort(members, new Comparator<User>() {
                         @Override
                         public int compare(User o1, User o2) {
@@ -120,9 +120,9 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
         return members.size();
     }
 
-    private void notifyRoleChange(int itemPosition, TeamMember member, TeamMember.Role newValue) {
+    private void notifyRoleChange(int itemPosition, String uid, TeamMember member, TeamMember.Role newValue) {
         // listener's reesponsibility to apply the change or toaster why not
-        if (listener.onRoleChange(member, newValue))
+        if (listener.onRoleChange(uid, member, newValue))
             this.notifyItemChanged(itemPosition);
     }
 
@@ -163,14 +163,14 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
             @SuppressWarnings("unchecked")
             ArrayAdapter<TeamMember.Role> roles = (ArrayAdapter<TeamMember.Role>) roleDropdown.getAdapter();
             TeamMember.Role roleSelected = roles.getItem(position);
-            notifyRoleChange(getAdapterPosition(), boundMember, roleSelected);
+            notifyRoleChange(getAdapterPosition(), boundUser.getUid(), boundMember, roleSelected);
         }
 
         @Override
         public void onNothingSelected(AdapterView<?> parent) {
             @SuppressWarnings("unchecked")
             ArrayAdapter<TeamMember.Role> roles = (ArrayAdapter<TeamMember.Role>) roleDropdown.getAdapter();
-            notifyRoleChange(getAdapterPosition(), boundMember, null);
+            notifyRoleChange(getAdapterPosition(), boundUser.getUid(), boundMember, null);
         }
     }
 }
