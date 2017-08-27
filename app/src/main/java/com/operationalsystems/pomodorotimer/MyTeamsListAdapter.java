@@ -15,6 +15,7 @@ import com.operationalsystems.pomodorotimer.data.Event;
 import com.operationalsystems.pomodorotimer.data.Pomodoro;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
+import com.operationalsystems.pomodorotimer.data.TeamMember;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +32,7 @@ import butterknife.ButterKnife;
 
 public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.TeamItem> {
     private static final String LOG_TAG = "MyTeamsListAdapter";
+    private String uid;
 
     public interface TeamSelectionListener {
         void teamSelected(Team team);
@@ -76,6 +78,10 @@ public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.
     @Override
     public int getItemCount() {
         return filteredTeams.size();
+    }
+
+    public void setUser(String uid) {
+        this.uid = uid;
     }
 
     public void setTeams(Collection<Team> teams) {
@@ -188,6 +194,8 @@ public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.
         @BindView(R.id.text_team_name) TextView nameView;
         @BindView(R.id.text_team_owner) TextView ownerView;
         @BindView(R.id.item_card) CardView itemCard;
+        @BindView(R.id.text_team_role) TextView roleView;
+
         private Team boundTeam;
 
         TeamItem(View itemView) {
@@ -200,6 +208,8 @@ public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.
             this.boundTeam = team;
             nameView.setText(team.getDomainName());
             ownerView.setText(team.getOwnerUid());
+            TeamMember teamMember = boundTeam.findTeamMember(uid);
+            String roleString = itemView.getContext().getString(R.string.role_view_label, teamMember.getRole().toString());
         }
     }
 }

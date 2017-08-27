@@ -1,15 +1,14 @@
 package com.operationalsystems.pomodorotimer;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,10 +19,6 @@ import com.operationalsystems.pomodorotimer.data.TeamMember;
 import com.operationalsystems.pomodorotimer.data.User;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
-import org.w3c.dom.Text;
-
-import java.util.Collections;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -33,7 +28,7 @@ public class TeamManageActivity extends AppCompatActivity {
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
         @Override
-        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
             FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             if (currentUser != null) {
                 onLogin(currentUser);
@@ -81,7 +76,7 @@ public class TeamManageActivity extends AppCompatActivity {
 
     @Override
     public void onRestoreInstanceState(Bundle inState) {
-        String teamDomain = inState.getString(STORE_TEAM_DOMAIN);
+        teamDomain = inState.getString(STORE_TEAM_DOMAIN);
     }
 
     @Override
@@ -111,8 +106,8 @@ public class TeamManageActivity extends AppCompatActivity {
         database = new PomodoroFirebaseHelper();
         adapter = new TeamMemberAdapter(null, database, new TeamMemberAdapter.RoleChangeListener() {
             @Override
-            public boolean onRoleChange(TeamMember member, TeamMember.Role newValue) {
-                return processRoleChange(member, newValue);
+            public boolean onRoleChange(String uid, TeamMember member, TeamMember.Role newValue) {
+                return processRoleChange(uid, member, newValue);
             }
         });
         this.teamMembers.setAdapter(adapter);
@@ -132,22 +127,22 @@ public class TeamManageActivity extends AppCompatActivity {
         }
     }
 
-    private boolean processRoleChange(final TeamMember member, final TeamMember.Role newRole) {
+    private boolean processRoleChange(final String uid, final TeamMember member, final TeamMember.Role newRole) {
         if (newRole == TeamMember.Role.None) {
             // delete the team member and return false;
-            database.quitTeam(team.getDomainName(), member.getMemberUid());
+            database.quitTeam(team.getDomainName(), uid);
             return false;
         } else if (newRole != member.getRole()) {
             // save the change and return true;
             final TeamMember.Role oldRole = member.getRole();
             member.setRole(newRole);
-            database.joinTeam(team.getDomainName(), member.getMemberUid(), newRole, theUser.getUid())
+            database.joinTeam(team.getDomainName(), uid, newRole, theUser.getUid())
                 .orElse(new Promise.PromiseCatcher() {
                     @Override
                     public void catchError(Object reason) {
                         Snackbar.make(coordinatorLayout, R.string.msg_team_update_failed, Snackbar.LENGTH_LONG);
                         member.setRole(oldRole);
-                        adapter.updateMember(member);
+                        adapter.updateMember(uid, member);
                     }
                 });
             return true;

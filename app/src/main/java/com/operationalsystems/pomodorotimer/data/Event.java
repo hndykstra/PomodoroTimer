@@ -185,6 +185,10 @@ public class Event {
         p.setEventKey(this.getKey());
     }
 
+    public void removePomodoro(String key) {
+        this.pomodoros.remove(key);
+    }
+
     public SortedMap<String, Pomodoro> getPomodoros() {
         return this.pomodoros;
     }
@@ -230,5 +234,10 @@ public class Event {
 
     public void removeMember(final String user) {
         members.remove(user);
+    }
+
+    public boolean hasMember(final String userId) {
+        String key = members.get(userId);
+        return key != null && key.length() > 0;
     }
 }

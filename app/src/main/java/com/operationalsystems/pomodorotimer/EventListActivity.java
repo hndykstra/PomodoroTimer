@@ -1,12 +1,15 @@
 package com.operationalsystems.pomodorotimer;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,7 +20,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -26,19 +28,17 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.operationalsystems.pomodorotimer.data.Event;
-import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
-import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
+import com.operationalsystems.pomodorotimer.data.TeamMember;
 import com.operationalsystems.pomodorotimer.data.User;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.EnumSet;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -49,10 +49,15 @@ import butterknife.OnItemSelected;
  */
 public class EventListActivity extends AppCompatActivity {
 
-    public static final String PLACEHOLDER_OWNER = "anonymous";
-    public static final String PLACEHOLDER_TEAM = "test";
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
     public static final String STORE_TEAM_DOMAIN = "TeamDomain";
+
+    // some sync adapter stuff
+    public static final String SYNC_AUTHORITY = "com.operationalsystems.pomodorotimer";
+    public static final String SYNC_ACCOUNT_TYPE = "pomodorotimer.operationalsystems.com";
+    public static final String SYNC_ACCOUNT = "dummy";
+
+    private static final EnumSet<TeamMember.Role> VALID_MEMBERS = EnumSet.of(TeamMember.Role.Owner, TeamMember.Role.Admin, TeamMember.Role.Member);
 
     class TeamDisplay {
 
@@ -81,7 +86,7 @@ public class EventListActivity extends AppCompatActivity {
         public boolean equals(Object o) {
             boolean isEqual = false;
             if (o instanceof TeamDisplay) {
-                TeamDisplay other = (TeamDisplay)o;
+                TeamDisplay other = (TeamDisplay) o;
                 if (team == null) {
                     isEqual = other.team == null && stringResourceId == other.stringResourceId;
                 } else {
@@ -96,7 +101,7 @@ public class EventListActivity extends AppCompatActivity {
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
         @Override
-        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
             FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             if (currentUser != null) {
                 onLogin(currentUser);
@@ -109,14 +114,39 @@ public class EventListActivity extends AppCompatActivity {
     private static final String LOG_TAG = "EventListActivity";
     private static final int RESULT_AUTH_ID = 20532;
 
+    /**
+     * Create a new dummy account for the sync adapter
+     *
+     * @param context The application context
+     */
+    public static Account CreateSyncAccount(Context context) {
+        // Create the account type and default account
+        Account newAccount = new Account(
+                SYNC_ACCOUNT, SYNC_ACCOUNT_TYPE);
+        // Get an instance of the Android account manager
+        AccountManager accountManager =
+                (AccountManager) context.getSystemService(
+                        ACCOUNT_SERVICE);
+        /*
+         * Add the account and account type, no password or user data
+         * If successful, return the Account object, otherwise report an error.
+         */
+        accountManager.addAccountExplicitly(newAccount, null, null);
+        return newAccount;
+    }
+
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authListener;
     private FirebaseUser theUser;
 
+    private Account syncAccount;
+
     private PomodoroFirebaseHelper database;
 
-    @BindView(R.id.team_spinner) Spinner teamSpinner;
-    @BindView(R.id.recycler_events) RecyclerView recycler;
+    @BindView(R.id.team_spinner)
+    Spinner teamSpinner;
+    @BindView(R.id.recycler_events)
+    RecyclerView recycler;
     private EventListAdapter adapter;
 
     private ArrayAdapter<TeamDisplay> teamListAdapter;
@@ -126,12 +156,21 @@ public class EventListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_event_list);
         ButterKnife.bind(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        syncAccount = CreateSyncAccount(this);
+        ContentResolver.addPeriodicSync(
+                syncAccount,
+                SYNC_AUTHORITY,
+                Bundle.EMPTY,
+                720L * 60L);
+
         PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
 
@@ -148,6 +187,8 @@ public class EventListActivity extends AppCompatActivity {
 
         if (savedInstanceState != null) {
             onRestoreInstanceState(savedInstanceState);
+        } else {
+            teamDomain = null;
         }
     }
 
@@ -214,13 +255,24 @@ public class EventListActivity extends AppCompatActivity {
     private void onLogin(final FirebaseUser user) {
         this.theUser = user;
         database = new PomodoroFirebaseHelper();
-        User userInst = new User();
-        userInst.setUid(theUser.getUid());
-        userInst.setDisplayName(theUser.getDisplayName());
-        database.createUser(userInst);
-        // other things like kick off the data load
-        setTeamSelection(teamDomain);
-        viewTeamData(teamDomain);
+        database.queryUser(theUser.getUid())
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        User u = (User) t;
+                        if (u == null) {
+                            u = new User();
+                            u.setUid(theUser.getUid());
+                            u.setDisplayName(theUser.getDisplayName());
+                            database.createUser(u);
+                        }
+                        if (teamDomain == null || teamDomain.length() == 0) {
+                            teamDomain = u.getRecentTeam();
+                        }
+                        populateTeams(teamDomain);
+                        return u;
+                    }
+                });
     }
 
     private void onLogout() {
@@ -239,17 +291,30 @@ public class EventListActivity extends AppCompatActivity {
                 RESULT_AUTH_ID);
     }
 
-    private void eventSelected(Event event) {
+    private void eventSelected(final Event event) {
         Log.d(LOG_TAG, "EVENT SELECTED");
         if (event.isActive()) {
-            Intent timerActivityIntent = new Intent(this, EventTimerActivity.class);
-            timerActivityIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
-            timerActivityIntent.putExtra(STORE_TEAM_DOMAIN, this.teamDomain);
-            startActivity(timerActivityIntent);
+            Promise joined = (!event.hasMember(theUser.getUid()) ? database.joinEvent(event, theUser.getUid(), new Date()) : Promise.resolved(true));
+
+            joined.then(new Promise.PromiseReceiver() {
+                @Override
+                public Object receive(Object t) {
+                    return database.updateUserRecentEvent(theUser.getUid(), event);
+                }
+            }).then(new Promise.PromiseReceiver() {
+                @Override
+                public Object receive(Object t) {
+                    Intent timerActivityIntent = new Intent(EventListActivity.this, EventTimerActivity.class);
+                    timerActivityIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
+                    timerActivityIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
+                    startActivity(timerActivityIntent);
+                    return t;
+                }
+            });
         } else {
             Intent summaryViewIntent = new Intent(this, EventSummaryActivity.class);
             summaryViewIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
-            summaryViewIntent.putExtra(STORE_TEAM_DOMAIN, this.teamDomain);
+            summaryViewIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
             startActivity(summaryViewIntent);
         }
     }
@@ -285,7 +350,7 @@ public class EventListActivity extends AppCompatActivity {
         Log.d(LOG_TAG, "Create event " + params.eventName);
 
         final Date createDate = new Date();
-        final String user = this.theUser == null ? PLACEHOLDER_OWNER : this.theUser.getUid();
+        final String user = theUser.getUid();
         Event newEvent = new Event(params.eventName, user, createDate, true,
                 params.activityMinutes, params.breakMinutes, teamDomain);
         String key = database.createEvent(newEvent);
@@ -293,8 +358,8 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     @OnItemSelected(R.id.team_spinner)
-    private void spinnerChanged() {
-        TeamDisplay selected = (TeamDisplay)teamSpinner.getSelectedItem();
+    void spinnerChanged() {
+        TeamDisplay selected = (TeamDisplay) teamSpinner.getSelectedItem();
         if (selected.team != null) {
             viewTeamData(selected.team.getDomainName());
         } else if (selected.stringResourceId == R.string.option_private_events) {
@@ -306,21 +371,27 @@ public class EventListActivity extends AppCompatActivity {
 
     private void setTeamSelection(String teamDomain) {
         int selectionIndex = -1;
+        int dfltSelection = -1;
         boolean isTeam = teamDomain != null && teamDomain.length() > 0;
 
-        for (int i=0 ; i < teamListAdapter.getCount() ; ++i) {
+        for (int i = 0; i < teamListAdapter.getCount(); ++i) {
             TeamDisplay td = teamListAdapter.getItem(i);
             if (isTeam && td.team != null && teamDomain.equals(td.team.getDomainName())) {
                 selectionIndex = i;
                 break;
-            } if (!isTeam && td.stringResourceId == R.string.option_private_events) {
+            } else if (!isTeam && td.stringResourceId == R.string.option_private_events) {
                 selectionIndex = i;
                 break;
+            } else if (td.stringResourceId == R.string.option_private_events) {
+                dfltSelection = i;
             }
         }
 
-        if (selectionIndex != -1)
+        if (selectionIndex != -1) {
             teamSpinner.setSelection(selectionIndex);
+        } else if (dfltSelection != -1) {
+            teamSpinner.setSelection(dfltSelection);
+        }
     }
 
     private void viewTeamData(String teamDomain) {
@@ -329,6 +400,7 @@ public class EventListActivity extends AppCompatActivity {
         }
 
         this.teamDomain = teamDomain;
+        database.updateUserRecentTeam(theUser.getUid(), teamDomain);
 
         DatabaseReference eventReference = database.getEventsReference(teamDomain, theUser.getUid());
         adapter = new EventListAdapter(eventReference, new EventListAdapter.EventSelectionListener() {
@@ -340,8 +412,9 @@ public class EventListActivity extends AppCompatActivity {
         recycler.setAdapter(adapter);
     }
 
-    private void populateTeams() {
-        teamListAdapter = new ArrayAdapter<TeamDisplay>(this, R.layout.support_simple_spinner_dropdown_item);
+    private void populateTeams(final String selectedTeam) {
+        teamDomain = selectedTeam;
+        teamListAdapter = new ArrayAdapter<TeamDisplay>(this, R.layout.custom_spinner_item);
         teamListAdapter.add(new TeamDisplay(R.string.option_private_events));
         teamListAdapter.add(new TeamDisplay(R.string.option_my_team));
         teamSpinner.setAdapter(teamListAdapter);
@@ -349,14 +422,31 @@ public class EventListActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                 String teamKey = dataSnapshot.getKey();
-                database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
-                    @Override
-                    public Object receive(Object t) {
-                        Team team = (Team)t;
-                        teamListAdapter.add(new TeamDisplay(team));
-                        return t;
+                String teamValue = dataSnapshot.getValue(String.class);
+                try {
+                    TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
+                    if (VALID_MEMBERS.contains(role)) {
+                        database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
+                            @Override
+                            public Object receive(Object t) {
+                                Team team = (Team) t;
+                                teamListAdapter.add(new TeamDisplay(team));
+                                if (team.getDomainName().equals(selectedTeam)) {
+                                    setTeamSelection(teamDomain);
+                                    viewTeamData(teamDomain);
+                                }
+                                return t;
+                            }
+                        });
                     }
-                });
+                } catch (IllegalArgumentException e) {
+                    Log.d(LOG_TAG, "Team role not recognized " + teamValue);
+                }
+
+                if (selectedTeam == null || selectedTeam.length() == 0) {
+                    setTeamSelection(selectedTeam);
+                    viewTeamData(selectedTeam);
+                }
             }
 
             @Override
@@ -367,7 +457,7 @@ public class EventListActivity extends AppCompatActivity {
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
                 String teamKey = dataSnapshot.getKey();
-                for (int i = 0 ; i < teamListAdapter.getCount() ; ++i) {
+                for (int i = 0; i < teamListAdapter.getCount(); ++i) {
                     TeamDisplay td = teamListAdapter.getItem(i);
                     if (td.team.getDomainName().equals(teamKey)) {
                         teamListAdapter.remove(td);

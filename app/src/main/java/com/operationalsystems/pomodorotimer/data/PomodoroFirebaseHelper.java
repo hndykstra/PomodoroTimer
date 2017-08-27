@@ -72,6 +72,7 @@ public class PomodoroFirebaseHelper {
 
     public PomodoroFirebaseHelper() {
         database = FirebaseDatabase.getInstance();
+        //database.setPersistenceEnabled(true);
     }
 
     public PomodoroFirebaseHelper(final FirebaseDatabase database) {
@@ -89,6 +90,25 @@ public class PomodoroFirebaseHelper {
         ValueEventListener valueReceiver = new PromiseValueEventListener(p, User.class, new UserHelper(userId));
         PomodoroFirebaseContract.getUserReference(database, userId).addListenerForSingleValueEvent(valueReceiver);
         return p;
+    }
+
+    public Promise updateUserRecentTeam(String userId, String teamDomain) {
+        DatabaseReference ref = PomodoroFirebaseContract.getUserReference(database, userId);
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("recentTeam", teamDomain);
+
+        Task<Void> task = ref.updateChildren(updates);
+        return TaskPromise.of(task);
+    }
+
+    public Promise updateUserRecentEvent(String userId, Event event) {
+        DatabaseReference ref = PomodoroFirebaseContract.getUserReference(database, userId);
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("recentTeam", event.getTeamDomain());
+        updates.put("recentEvent", event.getKey());
+
+        Task<Void> task = ref.updateChildren(updates);
+        return TaskPromise.of(task);
     }
 
     /**
@@ -127,6 +147,32 @@ public class PomodoroFirebaseHelper {
         return p;
     }
 
+    public void subscribePomodoros(final Event event, final ChildEventListener receiver) {
+        DatabaseReference reference;
+        if (event.getTeamDomain() != null && event.getTeamDomain().length() > 0) {
+            reference = PomodoroFirebaseContract.getUserPrivateEventsReference(database, event.getOwner())
+                    .child(event.getKey()).child("pomodoros");
+        } else {
+            reference = PomodoroFirebaseContract.getTeamEventsReference(database, event.getTeamDomain())
+                    .child(event.getKey()).child("pomodoros");
+        }
+
+        reference.addChildEventListener(receiver);
+    }
+
+    public void unsubscribePomodoros(final Event event, final ChildEventListener receiver) {
+        DatabaseReference reference;
+        if (event.getTeamDomain() != null && event.getTeamDomain().length() > 0) {
+            reference = PomodoroFirebaseContract.getUserPrivateEventsReference(database, event.getOwner())
+                    .child(event.getKey()).child("pomodoros");
+        } else {
+            reference = PomodoroFirebaseContract.getTeamEventsReference(database, event.getTeamDomain())
+                    .child(event.getKey()).child("pomodoros");
+        }
+
+        reference.removeEventListener(receiver);
+    }
+
     public DatabaseReference getEventsReference(final String teamDomain, final String uid) {
         if (teamDomain == null || teamDomain.isEmpty()) {
             return PomodoroFirebaseContract.getUserPrivateEventsReference(this.database, uid);
@@ -153,7 +199,8 @@ public class PomodoroFirebaseHelper {
         return TaskPromise.of(updateTask);
     }
 
-    public void joinEvent(final Event ev, final String uid, final Date joinTime) {
+    public Promise joinEvent(final Event ev, final String uid, final Date joinTime) {
+        final Promise p = new Promise();
         // add user to event members, add event to user joined events
         final DatabaseReference ref = database.getReference();
         boolean isTeamEvent = ev.getTeamDomain() != null && ev.getTeamDomain().length() > 0;
@@ -173,14 +220,26 @@ public class PomodoroFirebaseHelper {
                     Map<String,Object> updates = new HashMap<>();
                     updates.put(userJoinedEventsPath, dateStr);
                     updates.put(eventMemberPath, dateStr);
-                    ref.updateChildren(updates);
+                    TaskPromise.of(ref.updateChildren(updates))
+                        .then(new Promise.PromiseReceiver() {
+                            @Override
+                            public Object receive(Object t) {
+                                p.resolve(true);
+                                return null;
+                            }
+                        });
+                } else {
+                    p.resolve(false);
                 }
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
+                p.reject(databaseError);
             }
         });
+
+        return p;
     }
 
     public void updateTeamRole(final String teamDomain, final String uid, final TeamMember.Role role, final String updatedBy) {
