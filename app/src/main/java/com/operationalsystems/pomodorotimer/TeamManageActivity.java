@@ -1,15 +1,14 @@
 package com.operationalsystems.pomodorotimer;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -20,10 +19,6 @@ import com.operationalsystems.pomodorotimer.data.TeamMember;
 import com.operationalsystems.pomodorotimer.data.User;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
-import org.w3c.dom.Text;
-
-import java.util.Collections;
-
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
@@ -33,7 +28,7 @@ public class TeamManageActivity extends AppCompatActivity {
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
         @Override
-        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
             FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             if (currentUser != null) {
                 onLogin(currentUser);
@@ -81,7 +76,7 @@ public class TeamManageActivity extends AppCompatActivity {
 
     @Override
     public void onRestoreInstanceState(Bundle inState) {
-        String teamDomain = inState.getString(STORE_TEAM_DOMAIN);
+        teamDomain = inState.getString(STORE_TEAM_DOMAIN);
     }
 
     @Override

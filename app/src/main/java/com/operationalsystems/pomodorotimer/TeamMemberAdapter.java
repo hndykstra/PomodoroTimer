@@ -1,7 +1,6 @@
 package com.operationalsystems.pomodorotimer;
 
 import android.content.Context;
-import android.support.annotation.LayoutRes;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,8 +10,6 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.google.firebase.database.Query;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
 import com.operationalsystems.pomodorotimer.data.TeamMember;
@@ -20,7 +17,6 @@ import com.operationalsystems.pomodorotimer.data.User;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -66,16 +62,15 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
             Promise[] promises = new Promise[size];
             int count = 0;
             for (String uid : boundTeam.getMembers().keySet()) {
-                final String thisUid = uid;
                 promises[count++] = database.queryUser(uid);
             }
             Promise.all(promises).then(new Promise.PromiseReceiver() {
                 @Override
                 public Object receive(Object t) {
                     Object[] users = (Object[])t;
-                    members = new ArrayList<User>();
-                    for (int i=0 ; i < users.length ; ++i)
-                        members.add((User)users[i]);
+                    members = new ArrayList<>();
+                    for (Object o : users)
+                        members.add((User)o);
                     Collections.sort(members, new Comparator<User>() {
                         @Override
                         public int compare(User o1, User o2) {
@@ -168,8 +163,6 @@ public class TeamMemberAdapter extends RecyclerView.Adapter<TeamMemberAdapter.Te
 
         @Override
         public void onNothingSelected(AdapterView<?> parent) {
-            @SuppressWarnings("unchecked")
-            ArrayAdapter<TeamMember.Role> roles = (ArrayAdapter<TeamMember.Role>) roleDropdown.getAdapter();
             notifyRoleChange(getAdapterPosition(), boundUser.getUid(), boundMember, null);
         }
     }

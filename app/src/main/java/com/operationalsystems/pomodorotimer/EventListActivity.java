@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -21,7 +20,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -30,11 +28,7 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
 import com.operationalsystems.pomodorotimer.data.Event;
-import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
-import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseContract;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
 import com.operationalsystems.pomodorotimer.data.TeamMember;
@@ -92,7 +86,7 @@ public class EventListActivity extends AppCompatActivity {
         public boolean equals(Object o) {
             boolean isEqual = false;
             if (o instanceof TeamDisplay) {
-                TeamDisplay other = (TeamDisplay)o;
+                TeamDisplay other = (TeamDisplay) o;
                 if (team == null) {
                     isEqual = other.team == null && stringResourceId == other.stringResourceId;
                 } else {
@@ -107,7 +101,7 @@ public class EventListActivity extends AppCompatActivity {
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
         @Override
-        public void onAuthStateChanged(FirebaseAuth firebaseAuth) {
+        public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
             FirebaseUser currentUser = firebaseAuth.getCurrentUser();
             if (currentUser != null) {
                 onLogin(currentUser);
@@ -149,8 +143,10 @@ public class EventListActivity extends AppCompatActivity {
 
     private PomodoroFirebaseHelper database;
 
-    @BindView(R.id.team_spinner) Spinner teamSpinner;
-    @BindView(R.id.recycler_events) RecyclerView recycler;
+    @BindView(R.id.team_spinner)
+    Spinner teamSpinner;
+    @BindView(R.id.recycler_events)
+    RecyclerView recycler;
     private EventListAdapter adapter;
 
     private ArrayAdapter<TeamDisplay> teamListAdapter;
@@ -166,7 +162,6 @@ public class EventListActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ContentResolver resolver = getContentResolver();
         syncAccount = CreateSyncAccount(this);
         ContentResolver.addPeriodicSync(
                 syncAccount,
@@ -261,23 +256,23 @@ public class EventListActivity extends AppCompatActivity {
         this.theUser = user;
         database = new PomodoroFirebaseHelper();
         database.queryUser(theUser.getUid())
-            .then(new Promise.PromiseReceiver() {
-                @Override
-                public Object receive(Object t) {
-                    User u = (User)t;
-                    if (u == null) {
-                        u = new User();
-                        u.setUid(theUser.getUid());
-                        u.setDisplayName(theUser.getDisplayName());
-                        database.createUser(u);
+                .then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        User u = (User) t;
+                        if (u == null) {
+                            u = new User();
+                            u.setUid(theUser.getUid());
+                            u.setDisplayName(theUser.getDisplayName());
+                            database.createUser(u);
+                        }
+                        if (teamDomain == null || teamDomain.length() == 0) {
+                            teamDomain = u.getRecentTeam();
+                        }
+                        populateTeams(teamDomain);
+                        return u;
                     }
-                    if (teamDomain == null || teamDomain.length() == 0) {
-                        teamDomain = u.getRecentTeam();
-                    }
-                    populateTeams(teamDomain);
-                    return u;
-                }
-            });
+                });
     }
 
     private void onLogout() {
@@ -301,17 +296,21 @@ public class EventListActivity extends AppCompatActivity {
         if (event.isActive()) {
             Promise joined = (!event.hasMember(theUser.getUid()) ? database.joinEvent(event, theUser.getUid(), new Date()) : Promise.resolved(true));
 
-            database.updateUserRecentEvent(theUser.getUid(), event)
-                    .then(new Promise.PromiseReceiver() {
-                        @Override
-                        public Object receive(Object t) {
-                            Intent timerActivityIntent = new Intent(EventListActivity.this, EventTimerActivity.class);
-                            timerActivityIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
-                            timerActivityIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
-                            startActivity(timerActivityIntent);
-                            return t;
-                        }
-                    });
+            joined.then(new Promise.PromiseReceiver() {
+                @Override
+                public Object receive(Object t) {
+                    return database.updateUserRecentEvent(theUser.getUid(), event);
+                }
+            }).then(new Promise.PromiseReceiver() {
+                @Override
+                public Object receive(Object t) {
+                    Intent timerActivityIntent = new Intent(EventListActivity.this, EventTimerActivity.class);
+                    timerActivityIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
+                    timerActivityIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
+                    startActivity(timerActivityIntent);
+                    return t;
+                }
+            });
         } else {
             Intent summaryViewIntent = new Intent(this, EventSummaryActivity.class);
             summaryViewIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
@@ -360,7 +359,7 @@ public class EventListActivity extends AppCompatActivity {
 
     @OnItemSelected(R.id.team_spinner)
     void spinnerChanged() {
-        TeamDisplay selected = (TeamDisplay)teamSpinner.getSelectedItem();
+        TeamDisplay selected = (TeamDisplay) teamSpinner.getSelectedItem();
         if (selected.team != null) {
             viewTeamData(selected.team.getDomainName());
         } else if (selected.stringResourceId == R.string.option_private_events) {
@@ -375,7 +374,7 @@ public class EventListActivity extends AppCompatActivity {
         int dfltSelection = -1;
         boolean isTeam = teamDomain != null && teamDomain.length() > 0;
 
-        for (int i=0 ; i < teamListAdapter.getCount() ; ++i) {
+        for (int i = 0; i < teamListAdapter.getCount(); ++i) {
             TeamDisplay td = teamListAdapter.getItem(i);
             if (isTeam && td.team != null && teamDomain.equals(td.team.getDomainName())) {
                 selectionIndex = i;
@@ -458,7 +457,7 @@ public class EventListActivity extends AppCompatActivity {
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
                 String teamKey = dataSnapshot.getKey();
-                for (int i = 0 ; i < teamListAdapter.getCount() ; ++i) {
+                for (int i = 0; i < teamListAdapter.getCount(); ++i) {
                     TeamDisplay td = teamListAdapter.getItem(i);
                     if (td.team.getDomainName().equals(teamKey)) {
                         teamListAdapter.remove(td);
