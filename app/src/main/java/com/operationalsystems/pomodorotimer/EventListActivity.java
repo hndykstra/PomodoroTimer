@@ -481,7 +481,7 @@ public class EventListActivity extends AppCompatActivity {
                     } else {
                         // perhaps no longer a member?
                         if (existingMember != null) {
-                            teamListAdapter.remove(td);
+                            teamListAdapter.remove(existingMember);
                         }
                     }
 
