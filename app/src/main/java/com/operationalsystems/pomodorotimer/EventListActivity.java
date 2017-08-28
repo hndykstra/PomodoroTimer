@@ -451,7 +451,43 @@ public class EventListActivity extends AppCompatActivity {
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                // no-op
+                // could be a role change, applied -> member which would add an option
+                String teamKey = dataSnapshot.getKey();
+                String teamValue = dataSnapshot.getValue(String.class);
+                try {
+                    TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
+                    TeamDisplay existingMember = null;
+                    for (int i = 0; i < teamListAdapter.getCount(); ++i) {
+                        TeamDisplay td = teamListAdapter.getItem(i);
+                        if (td.team.getDomainName().equals(teamKey)) {
+                            existingMember = td;
+                            break;
+                        }
+                    }
+                    if (VALID_MEMBERS.contains(role)) {
+                        if (existingMember != null) {
+                            // update the team record to represent current role state
+                            existingMember.team.findTeamMember(theUser.getUid()).setRole(role);
+                        } else {
+                            database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
+                                @Override
+                                public Object receive(Object t) {
+                                    Team team = (Team) t;
+                                    teamListAdapter.add(new TeamDisplay(team));
+                                    return t;
+                                }
+                            });
+                        }
+                    } else {
+                        // perhaps no longer a member?
+                        if (existingMember != null) {
+                            teamListAdapter.remove(existingMember);
+                        }
+                    }
+
+                } catch (IllegalArgumentException e) {
+                    Log.d(LOG_TAG, "Team role not recognized " + teamValue);
+                }
             }
 
             @Override
