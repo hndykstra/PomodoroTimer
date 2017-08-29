@@ -22,6 +22,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -147,6 +149,8 @@ public class EventListActivity extends AppCompatActivity {
     Spinner teamSpinner;
     @BindView(R.id.recycler_events)
     RecyclerView recycler;
+    @BindView(R.id.ad_view)
+    AdView adView;
     private EventListAdapter adapter;
 
     private ArrayAdapter<TeamDisplay> teamListAdapter;
@@ -196,6 +200,9 @@ public class EventListActivity extends AppCompatActivity {
     protected void onResume() {
         auth.addAuthStateListener(authListener);
         super.onResume();
+
+        AdRequest request = new AdRequest.Builder().build();
+        adView.loadAd(request);
     }
 
     @Override
@@ -294,7 +301,9 @@ public class EventListActivity extends AppCompatActivity {
     private void eventSelected(final Event event) {
         Log.d(LOG_TAG, "EVENT SELECTED");
         if (event.isActive()) {
-            Promise joined = (!event.hasMember(theUser.getUid()) ? database.joinEvent(event, theUser.getUid(), new Date()) : Promise.resolved(true));
+            Promise joined = (event.getTeamDomain() != null && event.getTeamDomain().length() > 0 && !event.hasMember(theUser.getUid())
+                    ? database.joinEvent(event, theUser.getUid(), new Date())
+                    : Promise.resolved(true));
 
             joined.then(new Promise.PromiseReceiver() {
                 @Override

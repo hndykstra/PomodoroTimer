@@ -122,7 +122,20 @@ public class Promise {
     public synchronized Promise then(final PromiseReceiver receiver) {
         final Promise promise = new Promise();
         if (this.isResolved) {
-            promise.resolve(resolvedValue);
+            Object recvrResult = receiver.receive(resolvedValue);
+            if (recvrResult instanceof Promise) {
+                // if the receiver returns a promise, don't continue the
+                // chain until that promise finishes.
+                Promise intermediate = (Promise) recvrResult;
+                intermediate.then(new PromiseReceiver() {
+                    public Object receive(Object newResult) {
+                        promise.resolve(newResult);
+                        return null;
+                    }
+                });
+            } else {
+                promise.resolve(recvrResult);
+            }
         } else if (this.isRejected) {
             promise.reject(rejectReason);
         } else {

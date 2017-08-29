@@ -44,6 +44,7 @@ public class Pomodoro {
         setBreakDt(breakDt);
     }
 
+    @Exclude
     public String getKey() {
         return key;
     }
@@ -52,6 +53,7 @@ public class Pomodoro {
         this.key = key;
     }
 
+    @Exclude
     public String getEventKey() {
         return eventKey;
     }

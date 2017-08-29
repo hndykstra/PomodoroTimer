@@ -89,4 +89,6 @@
     <string name="action_view_summary">View summary</string>
     <string name="activity_status_ended">Finished</string>
     <string name="role_view_label">(%s)</string>
+
+    <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
 </resources>

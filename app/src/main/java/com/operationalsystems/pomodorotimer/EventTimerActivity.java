@@ -268,24 +268,31 @@ public class EventTimerActivity extends AppCompatActivity {
         if (state == ActivityState.WAITING || state == ActivityState.ENDED) {
             // no-op
         } else if (state == ActivityState.ACTIVITY) {
-            TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date());
-            this.timerCount.setText(timerInfo.formattedText);
-            if (timerInfo.overtime) {
-                this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColorOvertime));
-            } else {
-                this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColor));
+            if (currentPomodoro.getStartDt() != null) {
+                TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date());
+                this.timerCount.setText(timerInfo.formattedText);
+                if (timerInfo.overtime) {
+                    this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColorOvertime));
+                } else {
+                    this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColor));
+                }
             }
         } else if (state == ActivityState.INTERMISSION) {
             // for now in intermission just leave the timer text at whatever it was when intermission started
-            TimerData timerInfo = computeTimer(Integer.MAX_VALUE, currentPomodoro.getEndDt(), new Date());
-            this.timerCount.setText(timerInfo.formattedText);
+            if (currentPomodoro.getEndDt() != null) {
+                TimerData timerInfo = computeTimer(Integer.MAX_VALUE, currentPomodoro.getEndDt(), new Date());
+                this.timerCount.setText(timerInfo.formattedText);
+            }
         } else if (state == ActivityState.BREAK) {
-            TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date());
-            this.timerCount.setText(timerInfo.formattedText);
-            if (timerInfo.overtime) {
-                this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColorOvertime));
-            } else {
-                this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColor));
+            // in some race conditions, the state might not be valid
+            if (currentPomodoro.getBreakDt() != null) {
+                TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date());
+                this.timerCount.setText(timerInfo.formattedText);
+                if (timerInfo.overtime) {
+                    this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColorOvertime));
+                } else {
+                    this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColor));
+                }
             }
         }
     }
@@ -303,7 +310,7 @@ public class EventTimerActivity extends AppCompatActivity {
                     currentPomodoro.setBreakDt(closeTime);
                 }
                 currentPomodoro.setActive(false);
-                update();
+                updatePomodoro();
             }
             currentEvent.setActive(false);
             currentEvent.setEndDt(closeTime);
@@ -403,12 +410,14 @@ public class EventTimerActivity extends AppCompatActivity {
 
     private void togglePomodoro() {
         if (isOwner) {
+            Log.d(LOG_TAG, "toggle pomodoro state");
             Date toggleDate = new Date();
             if (state == ActivityState.ACTIVITY) {
                 // UI updates will happen when listener gets notified
                 // stopTimer();
                 // start a break;
-                this.currentPomodoro.setBreakDt(toggleDate);
+                currentPomodoro.setBreakDt(toggleDate);
+                updatePomodoro();
                 //updateState(ActivityState.BREAK);
                 // update();
                 // startTimer();
@@ -514,6 +523,10 @@ public class EventTimerActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private void updatePomodoro() {
+        database.updatePomodoro(currentEvent, currentPomodoro);
+    }
+
     private void update() {
         database.putEvent(currentEvent);
     }
@@ -563,7 +576,7 @@ public class EventTimerActivity extends AppCompatActivity {
 
     private void insertPomodoro() {
         currentEvent.addPomodoro(currentPomodoro);
-        update();
+        database.updatePomodoro(currentEvent, currentPomodoro);
     }
 
     private void unbindEvent() {
@@ -578,6 +591,8 @@ public class EventTimerActivity extends AppCompatActivity {
                 public void onChildAdded(DataSnapshot dataSnapshot, String s) {
                     Log.d(LOG_TAG, "pomodoro onChildAdded " + dataSnapshot.getKey());
                     Pomodoro p = dataSnapshot.getValue(Pomodoro.class);
+                    p.setKey(dataSnapshot.getKey());
+                    p.setEventKey(currentEvent.getKey());
                     currentEvent.addPomodoro(p);
                     refreshUI();
                 }
@@ -586,6 +601,8 @@ public class EventTimerActivity extends AppCompatActivity {
                 public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                     Log.d(LOG_TAG, "pomodoro onChildChanged " + dataSnapshot.getKey());
                     Pomodoro p = dataSnapshot.getValue(Pomodoro.class);
+                    p.setKey(dataSnapshot.getKey());
+                    p.setEventKey(currentEvent.getKey());
                     currentEvent.addPomodoro(p);
                     refreshUI();
                 }
@@ -606,6 +623,7 @@ public class EventTimerActivity extends AppCompatActivity {
                 @Override
                 public void onCancelled(DatabaseError databaseError) {
                     // no-op
+                    Log.d(LOG_TAG, "******** subscriber cancelled " + databaseError);
                 }
             };
 
