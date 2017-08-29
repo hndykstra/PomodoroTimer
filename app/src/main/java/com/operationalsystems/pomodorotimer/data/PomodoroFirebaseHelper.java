@@ -2,6 +2,7 @@ package com.operationalsystems.pomodorotimer.data;
 
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -25,6 +26,8 @@ import java.util.Objects;
  * Helper methods to reduce client code load.
  */
 public class PomodoroFirebaseHelper {
+
+    private static final String LOG_TAG = "PomodoroFirebaseHelper";
 
     static class TeamHelper implements PromiseValueEventListener.EntityHelper {
         private String key;
@@ -149,7 +152,7 @@ public class PomodoroFirebaseHelper {
 
     public void subscribePomodoros(final Event event, final ChildEventListener receiver) {
         DatabaseReference reference;
-        if (event.getTeamDomain() != null && event.getTeamDomain().length() > 0) {
+        if (event.getTeamDomain() == null || event.getTeamDomain().length() == 0) {
             reference = PomodoroFirebaseContract.getUserPrivateEventsReference(database, event.getOwner())
                     .child(event.getKey()).child("pomodoros");
         } else {
@@ -157,6 +160,7 @@ public class PomodoroFirebaseHelper {
                     .child(event.getKey()).child("pomodoros");
         }
 
+        Log.d(LOG_TAG, "SUBSCRIBE " + reference.toString());
         reference.addChildEventListener(receiver);
     }
 
@@ -170,6 +174,7 @@ public class PomodoroFirebaseHelper {
                     .child(event.getKey()).child("pomodoros");
         }
 
+        Log.d(LOG_TAG, "UNSUBSCRIBE " + reference.toString());
         reference.removeEventListener(receiver);
     }
 
@@ -377,15 +382,27 @@ public class PomodoroFirebaseHelper {
         return key;
     }
 
-    public Task<Void> putEvent(Event ev) {
+    public Promise putEvent(Event ev) {
         if (ev.getTeamDomain() == null || ev.getTeamDomain().isEmpty()) {
             DatabaseReference eventRef = PomodoroFirebaseContract.getUserPrivateEventsReference(this.database, ev.getOwner())
                     .child(ev.getKey());
-            return eventRef.setValue(ev);
+            return TaskPromise.of(eventRef.setValue(ev));
         } else {
             DatabaseReference eventRef = PomodoroFirebaseContract.getTeamEventsReference(this.database, ev.getTeamDomain())
                     .child(ev.getKey());
-            return eventRef.setValue(ev);
+            return TaskPromise.of(eventRef.setValue(ev));
+        }
+    }
+
+    public Promise updatePomodoro(Event inEvent, Pomodoro pomo) {
+        if (inEvent.getTeamDomain() == null || inEvent.getTeamDomain().isEmpty()) {
+            DatabaseReference pomoRef = PomodoroFirebaseContract.getUserPrivateEventsReference(this.database, inEvent.getOwner())
+                    .child(inEvent.getKey()).child("pomodoros").child(pomo.getKey());
+            return TaskPromise.of(pomoRef.setValue(pomo));
+        } else {
+            DatabaseReference pomoRef = PomodoroFirebaseContract.getTeamEventsReference(this.database, inEvent.getTeamDomain())
+                    .child(inEvent.getKey()).child("pomodoros").child(pomo.getKey());
+            return TaskPromise.of(pomoRef.setValue(pomo));
         }
     }
 

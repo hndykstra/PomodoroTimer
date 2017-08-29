@@ -72,9 +72,11 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
             Promise.all(promises).then(new Promise.PromiseReceiver() {
                 @Override
                 public Object receive(Object t) {
-                    User[] array = (User[])t;
-                    members = new ArrayList<User>();
-                    members.addAll(Arrays.asList(array));
+                    Object[] array = (Object[])t;
+                    members = new ArrayList<>();
+                    for (Object o : array) {
+                        members.add((User)o);
+                    }
                     Collections.sort(members, new Comparator<User>() {
                         @Override
                         public int compare(User o1, User o2) {
