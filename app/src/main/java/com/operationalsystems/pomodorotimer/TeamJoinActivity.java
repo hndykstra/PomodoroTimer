@@ -81,6 +81,7 @@ public class TeamJoinActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         toolbar.setTitle(R.string.title_create_join_team);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
@@ -278,6 +279,7 @@ public class TeamJoinActivity extends AppCompatActivity {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String previousSibling) {
                 String teamKey = dataSnapshot.getKey();
+                Log.d(LOG_TAG, "onChildAdded " + teamKey);
                 database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
                     @Override
                     public Object receive(Object t) {
@@ -291,6 +293,7 @@ public class TeamJoinActivity extends AppCompatActivity {
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
                 String teamKey = dataSnapshot.getKey();
+                Log.d(LOG_TAG, "onChildChanged " + teamKey);
                 database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
                     @Override
                     public Object receive(Object t) {
@@ -303,6 +306,7 @@ public class TeamJoinActivity extends AppCompatActivity {
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d(LOG_TAG, "onChildRemoved " + dataSnapshot.getKey());
                 adapter.removeTeam(dataSnapshot.getKey());
             }
 
@@ -314,6 +318,7 @@ public class TeamJoinActivity extends AppCompatActivity {
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 // no-op
+                Log.d(LOG_TAG, "subscribe onCancelled");
             }
         };
 

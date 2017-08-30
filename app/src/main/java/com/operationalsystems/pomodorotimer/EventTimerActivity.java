@@ -105,8 +105,8 @@ public class EventTimerActivity extends AppCompatActivity {
     private Event currentEvent;
     private Pomodoro currentPomodoro;
     private ActivityState state;
-    private boolean soundAlarm;
-    private boolean isOwner;
+    private boolean soundAlarm = false;
+    private boolean isOwner = false;
 
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authListener;
@@ -193,6 +193,8 @@ public class EventTimerActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
+        soundAlarm = PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean(getString(R.string.pref_sound_alarm_key), false);
         auth.addAuthStateListener(authListener);
     }
 
@@ -347,6 +349,7 @@ public class EventTimerActivity extends AppCompatActivity {
 
     private void playNotification() {
         Uri alert = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        // TODO: check if notifications are enabled?
         if (alert != null) {
             Ringtone ring = RingtoneManager.getRingtone(this, alert);
             if (ring != null && !ring.isPlaying()) {
@@ -394,7 +397,7 @@ public class EventTimerActivity extends AppCompatActivity {
         if (alarmHandler != null) {
             final AlarmReceiver rcvr = alarmer;
             alarmer = null;
-            alarmHandler.removeCallbacks(rcvr);
+            alarmHandler.removeCallbacksAndMessages(null);
         }
     }
 
