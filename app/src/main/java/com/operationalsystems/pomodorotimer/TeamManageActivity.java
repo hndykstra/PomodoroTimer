@@ -60,6 +60,7 @@ public class TeamManageActivity extends AppCompatActivity {
         ButterKnife.bind(this);
         toolbar.setTitle(R.string.title_activity_team_manage);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
         auth = FirebaseAuth.getInstance();
         authListener = new AuthListener();
