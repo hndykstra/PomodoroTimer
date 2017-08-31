@@ -33,6 +33,7 @@ import butterknife.ButterKnife;
 
 public class EventSummaryActivity extends AppCompatActivity {
     public static final String EXTRA_EVENT_ID = "SelectedEventId";
+    public static final String EXTRA_TEAM_DOMAIN = "TeamDomain";
 
     private static final String LOG_TAG = "EventSummaryActivity";
 
@@ -92,8 +93,8 @@ public class EventSummaryActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             onRestoreInstanceState(savedInstanceState);
         } else {
-            this.eventKey = getIntent().getStringExtra(EventListActivity.EXTRA_EVENT_ID);
-            this.teamDomain = getIntent().getStringExtra(EventListActivity.STORE_TEAM_DOMAIN);
+            this.eventKey = getIntent().getStringExtra(EXTRA_EVENT_ID);
+            this.teamDomain = getIntent().getStringExtra(EXTRA_TEAM_DOMAIN);
         }
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -107,14 +108,14 @@ public class EventSummaryActivity extends AppCompatActivity {
 
     @Override
     public void onRestoreInstanceState(Bundle inState) {
-        this.eventKey = inState.getString(EventListActivity.EXTRA_EVENT_ID);
-        this.teamDomain = inState.getString(EventListActivity.STORE_TEAM_DOMAIN);
+        this.eventKey = inState.getString(EXTRA_EVENT_ID);
+        this.teamDomain = inState.getString(EXTRA_TEAM_DOMAIN);
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        outState.putString(EventListActivity.EXTRA_EVENT_ID, this.eventKey);
-        outState.putString(EventListActivity.STORE_TEAM_DOMAIN, this.teamDomain);
+        outState.putString(EXTRA_EVENT_ID, this.eventKey);
+        outState.putString(EXTRA_TEAM_DOMAIN, this.teamDomain);
     }
 
     @Override

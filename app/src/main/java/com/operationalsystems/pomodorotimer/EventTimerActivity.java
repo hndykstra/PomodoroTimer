@@ -302,6 +302,7 @@ public class EventTimerActivity extends AppCompatActivity {
     private void closeEvent() {
         Intent summaryIntent = new Intent(this, EventSummaryActivity.class);
         summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getKey());
+        summaryIntent.putExtra(EventSummaryActivity.EXTRA_TEAM_DOMAIN, currentEvent.getTeamDomain());
         if (isOwner && state != ActivityState.ENDED) {
             Date closeTime = new Date();
             if (currentPomodoro != null) {
