@@ -45,7 +45,7 @@ public class PomodoroFirebaseHelper {
 
     static class EventHelper implements PromiseValueEventListener.EntityHelper {
         private String key;
-        public EventHelper(String key) {
+        EventHelper(String key) {
             this.key = key;
         }
 
@@ -59,7 +59,7 @@ public class PomodoroFirebaseHelper {
 
     static class UserHelper implements PromiseValueEventListener.EntityHelper {
         private String uid;
-        public UserHelper(String uid) {
+        UserHelper(String uid) {
             this.uid = uid;
         }
 
@@ -420,12 +420,13 @@ public class PomodoroFirebaseHelper {
 
     public void addMemberToEvent(String eventKey, String team, String uid, Date joinDt) {
         // add event key to USER_MEMBER_OF_EVENTS
+        final String dateStr = DataUtil.dbFromDate(joinDt);
         DatabaseReference userMemberKey = PomodoroFirebaseContract.getUserEventsJoinedReference(this.database, uid, team);
-        userMemberKey.setValue(joinDt);
+        userMemberKey.setValue(dateStr);
 
         // add uid: joinDt to TEAM_EVENT_MEMBERS
         DatabaseReference eventMemberKey = PomodoroFirebaseContract.getTeamEventMembersReference(this.database, team, eventKey)
                 .child(uid);
-        eventMemberKey.setValue(joinDt);
+        eventMemberKey.setValue(dateStr);
     }
 }
