@@ -2,6 +2,7 @@ package com.operationalsystems.pomodorotimer;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,17 +32,20 @@ import butterknife.ButterKnife;
  */
 
 public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberListAdapter.EventMemberItem> {
+    private static final String LOG_TAG = EventMemberListAdapter.class.getSimpleName();
 
     private Event theEvent;
     private PomodoroFirebaseHelper database;
     private List<User> members = Collections.emptyList();
 
     public EventMemberListAdapter(final Event theEvent, final PomodoroFirebaseHelper database) {
+        this.database = database;
         setEvent(theEvent);
     }
 
     @Override
     public EventMemberItem onCreateViewHolder(ViewGroup parent, int viewType) {
+        Log.d(LOG_TAG, "onCreateViewHolder");
         Context context = parent.getContext();
         LayoutInflater inflater = LayoutInflater.from(context);
         View v = inflater.inflate(R.layout.member_item, parent, false);
@@ -50,6 +54,7 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
 
     @Override
     public void onBindViewHolder(EventMemberItem holder, int position) {
+        Log.d(LOG_TAG, "onBindViewHolder " + position);
         if (members.size() == 0 && position == 0) {
             holder.bind(null);
         } else {
@@ -73,6 +78,7 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
                 @Override
                 public Object receive(Object t) {
                     Object[] array = (Object[])t;
+                    Log.d(LOG_TAG, "Received members " + array.length);
                     members = new ArrayList<>();
                     for (Object o : array) {
                         members.add((User)o);
@@ -93,6 +99,7 @@ public class EventMemberListAdapter extends RecyclerView.Adapter<EventMemberList
 
     @Override
     public int getItemCount() {
+        Log.d(LOG_TAG, "getItemCount " + members.size());
         return members.size() == 0 ? 1 : members.size();
     }
 

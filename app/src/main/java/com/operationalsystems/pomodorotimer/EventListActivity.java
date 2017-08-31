@@ -430,6 +430,7 @@ public class EventListActivity extends AppCompatActivity {
         database.subscribeUserTeams(theUser.getUid(), new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                Log.d(LOG_TAG, "onChildAdded " + dataSnapshot.getKey());
                 String teamKey = dataSnapshot.getKey();
                 String teamValue = dataSnapshot.getValue(String.class);
                 try {
@@ -460,6 +461,7 @@ public class EventListActivity extends AppCompatActivity {
 
             @Override
             public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                Log.d(LOG_TAG, "onChildChanged " + dataSnapshot.getKey());
                 // could be a role change, applied -> member which would add an option
                 String teamKey = dataSnapshot.getKey();
                 String teamValue = dataSnapshot.getValue(String.class);
@@ -501,6 +503,7 @@ public class EventListActivity extends AppCompatActivity {
 
             @Override
             public void onChildRemoved(DataSnapshot dataSnapshot) {
+                Log.d(LOG_TAG, "onChildRemoved " + dataSnapshot.getKey());
                 String teamKey = dataSnapshot.getKey();
                 for (int i = 0; i < teamListAdapter.getCount(); ++i) {
                     TeamDisplay td = teamListAdapter.getItem(i);
@@ -514,11 +517,13 @@ public class EventListActivity extends AppCompatActivity {
             @Override
             public void onChildMoved(DataSnapshot dataSnapshot, String s) {
                 // no-op
+                Log.d(LOG_TAG, "onChildMoved " + dataSnapshot.getKey());
             }
 
             @Override
             public void onCancelled(DatabaseError databaseError) {
                 // no-op
+                Log.d(LOG_TAG, "onCancelled " + databaseError.toString());
             }
         });
     }

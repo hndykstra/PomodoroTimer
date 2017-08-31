@@ -88,8 +88,6 @@ public class EventSummaryActivity extends AppCompatActivity {
 
         RecyclerView.LayoutManager lm2 = new GridLayoutManager(this, 1);
         memberRecycler.setLayoutManager(lm2);
-        memberAdapter = new EventMemberListAdapter(null, database);
-        memberRecycler.setAdapter(memberAdapter);
 
         if (savedInstanceState != null) {
             onRestoreInstanceState(savedInstanceState);
@@ -130,6 +128,8 @@ public class EventSummaryActivity extends AppCompatActivity {
     private void onLogin(FirebaseUser user) {
         this.theUser = user;
         database = new PomodoroFirebaseHelper();
+        memberAdapter = new EventMemberListAdapter(null, database);
+        memberRecycler.setAdapter(memberAdapter);
         initializeEventState();
     }
 

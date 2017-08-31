@@ -212,7 +212,7 @@ public class PomodoroFirebaseHelper {
         if (!isTeamEvent)
             throw new IllegalArgumentException("Cannot join a private event");
         DatabaseReference eventRef = PomodoroFirebaseContract.getTeamEventsReference(database, ev.getTeamDomain()).child(ev.getKey());
-        final String userJoinedEventsPath = String.format(PomodoroFirebaseContract.USER_EVENT_MEMBERS, uid)
+        final String userJoinedEventsPath = String.format(PomodoroFirebaseContract.USER_EVENT_MEMBERS, uid, ev.getKey())
                 + "/" + ev.getTeamDomain();
         final String eventMemberPath = String.format(PomodoroFirebaseContract.TEAM_EVENT_MEMBERS, ev.getTeamDomain(), ev.getKey())
                 + "/" + uid;
