@@ -41,6 +41,7 @@ import java.text.DateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -273,7 +274,10 @@ public class EventListActivity extends AppCompatActivity {
                             u.setDisplayName(theUser.getDisplayName());
                             database.createUser(u);
                         }
+                        Log.d(LOG_TAG, "login team domain " + teamDomain);
                         if (teamDomain == null || teamDomain.length() == 0) {
+                            Log.d(LOG_TAG, "login user " + u.getUid());
+                            Log.d(LOG_TAG, "login recent team " + u.getRecentTeam());
                             teamDomain = u.getRecentTeam();
                         }
                         populateTeams(teamDomain);
@@ -427,104 +431,122 @@ public class EventListActivity extends AppCompatActivity {
         teamListAdapter.add(new TeamDisplay(R.string.option_private_events));
         teamListAdapter.add(new TeamDisplay(R.string.option_my_team));
         teamSpinner.setAdapter(teamListAdapter);
-        database.subscribeUserTeams(theUser.getUid(), new ChildEventListener() {
+        database.queryUserTeams(theUser.getUid(), VALID_MEMBERS).then(new Promise.PromiseReceiver() {
             @Override
-            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-                Log.d(LOG_TAG, "onChildAdded " + dataSnapshot.getKey());
-                String teamKey = dataSnapshot.getKey();
-                String teamValue = dataSnapshot.getValue(String.class);
-                try {
-                    TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
-                    if (VALID_MEMBERS.contains(role)) {
-                        database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
-                            @Override
-                            public Object receive(Object t) {
-                                Team team = (Team) t;
-                                teamListAdapter.add(new TeamDisplay(team));
-                                if (team.getDomainName().equals(selectedTeam)) {
-                                    setTeamSelection(teamDomain);
-                                    viewTeamData(teamDomain);
-                                }
-                                return t;
-                            }
-                        });
-                    }
-                } catch (IllegalArgumentException e) {
-                    Log.d(LOG_TAG, "Team role not recognized " + teamValue);
+            public Object receive(Object t) {
+                List<Team> teams = (List<Team>)t;
+                boolean selectedFound = false;
+                for (Team tm : teams) {
+                    teamListAdapter.add(new TeamDisplay(tm));
+                    selectedFound = selectedFound || tm.getDomainName().equals(selectedTeam);
                 }
-
-                if (selectedTeam == null || selectedTeam.length() == 0) {
+                if (selectedFound) {
                     setTeamSelection(selectedTeam);
-                    viewTeamData(selectedTeam);
                 }
-            }
-
-            @Override
-            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-                Log.d(LOG_TAG, "onChildChanged " + dataSnapshot.getKey());
-                // could be a role change, applied -> member which would add an option
-                String teamKey = dataSnapshot.getKey();
-                String teamValue = dataSnapshot.getValue(String.class);
-                try {
-                    TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
-                    TeamDisplay existingMember = null;
-                    for (int i = 0; i < teamListAdapter.getCount(); ++i) {
-                        TeamDisplay td = teamListAdapter.getItem(i);
-                        if (td.team.getDomainName().equals(teamKey)) {
-                            existingMember = td;
-                            break;
-                        }
-                    }
-                    if (VALID_MEMBERS.contains(role)) {
-                        if (existingMember != null) {
-                            // update the team record to represent current role state
-                            existingMember.team.findTeamMember(theUser.getUid()).setRole(role);
-                        } else {
-                            database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
-                                @Override
-                                public Object receive(Object t) {
-                                    Team team = (Team) t;
-                                    teamListAdapter.add(new TeamDisplay(team));
-                                    return t;
+                // now also subscribe to changes
+                database.subscribeUserTeams(theUser.getUid(), new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                        Log.d(LOG_TAG, "onChildAdded " + dataSnapshot.getKey());
+                        String teamKey = dataSnapshot.getKey();
+                        if (findTeamDisplay(teamKey) == null) {
+                            String teamValue = dataSnapshot.getValue(String.class);
+                            try {
+                                TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
+                                if (VALID_MEMBERS.contains(role)) {
+                                    database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
+                                        @Override
+                                        public Object receive(Object t) {
+                                            Team team = (Team) t;
+                                            teamListAdapter.add(new TeamDisplay(team));
+                                            return t;
+                                        }
+                                    });
                                 }
-                            });
-                        }
-                    } else {
-                        // perhaps no longer a member?
-                        if (existingMember != null) {
-                            teamListAdapter.remove(existingMember);
+                            } catch (IllegalArgumentException e) {
+                                Log.d(LOG_TAG, "Team role not recognized " + teamValue);
+                            }
                         }
                     }
 
-                } catch (IllegalArgumentException e) {
-                    Log.d(LOG_TAG, "Team role not recognized " + teamValue);
-                }
-            }
+                    @Override
+                    public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                        Log.d(LOG_TAG, "onChildChanged " + dataSnapshot.getKey());
+                        // could be a role change, applied -> member which would add an option
+                        String teamKey = dataSnapshot.getKey();
+                        String teamValue = dataSnapshot.getValue(String.class);
+                        try {
+                            TeamMember.Role role = TeamMember.Role.valueOf(teamValue);
+                            TeamDisplay existingMember = findTeamDisplay(teamKey);
+                            if (VALID_MEMBERS.contains(role)) {
+                                if (existingMember != null) {
+                                    // update the team record to represent current role state
+                                    existingMember.team.findTeamMember(theUser.getUid()).setRole(role);
+                                } else {
+                                    database.queryTeam(teamKey).then(new Promise.PromiseReceiver() {
+                                        @Override
+                                        public Object receive(Object t) {
+                                            Team team = (Team) t;
+                                            teamListAdapter.add(new TeamDisplay(team));
+                                            return t;
+                                        }
+                                    });
+                                }
+                            } else {
+                                // perhaps no longer a member?
+                                if (existingMember != null) {
+                                    teamListAdapter.remove(existingMember);
+                                }
+                            }
 
-            @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) {
-                Log.d(LOG_TAG, "onChildRemoved " + dataSnapshot.getKey());
-                String teamKey = dataSnapshot.getKey();
-                for (int i = 0; i < teamListAdapter.getCount(); ++i) {
-                    TeamDisplay td = teamListAdapter.getItem(i);
-                    if (td.team.getDomainName().equals(teamKey)) {
-                        teamListAdapter.remove(td);
-                        break;
+                        } catch (IllegalArgumentException e) {
+                            Log.d(LOG_TAG, "Team role not recognized " + teamValue);
+                        }
                     }
-                }
-            }
 
-            @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-                // no-op
-                Log.d(LOG_TAG, "onChildMoved " + dataSnapshot.getKey());
-            }
+                    @Override
+                    public void onChildRemoved(DataSnapshot dataSnapshot) {
+                        Log.d(LOG_TAG, "onChildRemoved " + dataSnapshot.getKey());
+                        String teamKey = dataSnapshot.getKey();
+                        for (int i = 0; i < teamListAdapter.getCount(); ++i) {
+                            TeamDisplay td = teamListAdapter.getItem(i);
+                            if (td.team.getDomainName().equals(teamKey)) {
+                                teamListAdapter.remove(td);
+                                break;
+                            }
+                        }
+                    }
 
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-                // no-op
-                Log.d(LOG_TAG, "onCancelled " + databaseError.toString());
+                    @Override
+                    public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+                        // no-op
+                        Log.d(LOG_TAG, "onChildMoved " + dataSnapshot.getKey());
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        // no-op
+                        Log.d(LOG_TAG, "onCancelled " + databaseError.toString());
+                    }
+                });
+                return t;
             }
         });
+
+        // if the selection is private events, we can do that now
+        if (selectedTeam == null || selectedTeam.isEmpty()) {
+            setTeamSelection(selectedTeam);
+            viewTeamData(selectedTeam);
+        }
+    }
+
+    private TeamDisplay findTeamDisplay(final String teamKey) {
+        for (int i = 0; i < teamListAdapter.getCount(); ++i) {
+            TeamDisplay td = teamListAdapter.getItem(i);
+            if (td.team != null && td.team.getDomainName().equals(teamKey)) {
+                return td;
+            }
+        }
+        return null;
     }
 }

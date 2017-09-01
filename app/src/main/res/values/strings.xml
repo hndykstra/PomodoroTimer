@@ -20,6 +20,7 @@
     <string name="create_pomodoro_title">Start a New Pomodoro</string>
     <string name="hint_event_name">Enter a name</string>
     <string name="create_event_button">Start</string>
+    <string name="create_team_button">Create</string>
     <string name="cancel_button">Cancel</string>
     <string name="title_activity_event_timer">Activity Timer</string>
     <string name="next_pomodoro_btn">Start Pomodoro</string>

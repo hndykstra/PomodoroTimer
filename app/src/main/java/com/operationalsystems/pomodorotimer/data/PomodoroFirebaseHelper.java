@@ -16,9 +16,12 @@ import com.operationalsystems.pomodorotimer.util.Promise;
 import com.operationalsystems.pomodorotimer.util.PromiseValueEventListener;
 import com.operationalsystems.pomodorotimer.util.TaskPromise;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -95,6 +98,64 @@ public class PomodoroFirebaseHelper {
         return p;
     }
 
+    /**
+     * Queries the teams in which the user holds one of specified roles
+     * @param userId Id of user whose teams
+     * @param roles Set of roles to accept
+     * @return Promise for List&lt;Team&gt;
+     */
+    public Promise queryUserTeams(final String userId, final EnumSet<TeamMember.Role> roles) {
+        final Promise p = new Promise();
+
+        ValueEventListener valueReceiver = new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                int ct = (int)dataSnapshot.getChildrenCount();
+                Promise[] queryPromises = new Promise[ct];
+                int i=0;
+                for (DataSnapshot child : dataSnapshot.getChildren()) {
+                    String teamKey = child.getKey();
+                    String roleValue = child.getValue(String.class);
+                    try {
+                        TeamMember.Role role = TeamMember.Role.valueOf(roleValue);
+                        if (roles.contains(role)) {
+                            queryPromises[i] = queryTeam(teamKey);
+                        } else {
+                            queryPromises[i] = Promise.resolved(null);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        Log.d(LOG_TAG, "invalid role " + roleValue);
+                    }
+                    ++i;
+                }
+
+                Promise.all(queryPromises).then(new Promise.PromiseReceiver() {
+                    @Override
+                    public Object receive(Object t) {
+                        List<Team> teams = new ArrayList<>();
+                        Object[] array = (Object[])t;
+                        for (Object o : array) {
+                            if (o != null)
+                                teams.add((Team)o);
+                        }
+                        p.resolve(teams);
+                        return t;
+                    }
+                });
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                p.reject(databaseError);
+            }
+        };
+
+        DatabaseReference ref = PomodoroFirebaseContract.getUserTeamsReference(database, userId);
+        ref.addListenerForSingleValueEvent(valueReceiver);
+
+        return p;
+    }
+
     public Promise updateUserRecentTeam(String userId, String teamDomain) {
         DatabaseReference ref = PomodoroFirebaseContract.getUserReference(database, userId);
         Map<String, Object> updates = new HashMap<>();
@@ -148,6 +209,20 @@ public class PomodoroFirebaseHelper {
         }
 
         return p;
+    }
+
+    public void subscribeEventChanges(final Event event, final ValueEventListener receiver) {
+        DatabaseReference reference;
+        if (event.getTeamDomain() == null || event.getTeamDomain().length() == 0) {
+            reference = PomodoroFirebaseContract.getUserPrivateEventsReference(database, event.getOwner())
+                    .child(event.getKey());
+        } else {
+            reference = PomodoroFirebaseContract.getTeamEventsReference(database, event.getTeamDomain())
+                    .child(event.getKey());
+        }
+
+        Log.d(LOG_TAG, "SUBSCRIBE " + reference.toString());
+        reference.addValueEventListener(receiver);
     }
 
     public void subscribePomodoros(final Event event, final ChildEventListener receiver) {
