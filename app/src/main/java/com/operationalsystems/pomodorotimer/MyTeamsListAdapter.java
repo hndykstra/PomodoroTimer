@@ -96,13 +96,13 @@ public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.
     }
 
     public void filter(String teamName) {
-        this.filter = teamName;
+        filter = teamName;
         applyFilter();
     }
 
     public void addTeam(Team t) {
         Log.d(LOG_TAG, "adding " + t.getDomainName());
-        this.teams.add(t);
+        teams.add(t);
         if (checkTeamFilter(t)) {
             Log.d(LOG_TAG, "passed filter");
             this.filteredTeams.add(t);

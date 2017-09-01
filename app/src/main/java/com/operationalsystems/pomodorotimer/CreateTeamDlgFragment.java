@@ -42,7 +42,7 @@ public class CreateTeamDlgFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setPositiveButton(R.string.create_event_button, new DialogInterface.OnClickListener() {
+        builder.setPositiveButton(R.string.create_team_button, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 // extract data and send to consumer

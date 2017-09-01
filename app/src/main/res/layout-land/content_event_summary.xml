@@ -76,7 +76,7 @@
 
         <android.support.v7.widget.RecyclerView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:padding="@dimen/small_layout_margin"
             android:id="@+id/recycler_pomodoro_list">
         </android.support.v7.widget.RecyclerView>
@@ -97,7 +97,7 @@
         <android.support.v7.widget.RecyclerView
             android:padding="@dimen/small_layout_margin"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:id="@+id/recycler_members">
         </android.support.v7.widget.RecyclerView>
 

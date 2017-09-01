@@ -112,6 +112,7 @@ public class EventTimerActivity extends AppCompatActivity {
     private FirebaseAuth.AuthStateListener authListener;
     private FirebaseUser theUser;
     private ChildEventListener pomodoroListener;
+    private ValueEventListener eventListener;
 
     private PomodoroFirebaseHelper database;
 
@@ -302,6 +303,7 @@ public class EventTimerActivity extends AppCompatActivity {
     private void closeEvent() {
         Intent summaryIntent = new Intent(this, EventSummaryActivity.class);
         summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getKey());
+        summaryIntent.putExtra(EventSummaryActivity.EXTRA_TEAM_DOMAIN, currentEvent.getTeamDomain());
         if (isOwner && state != ActivityState.ENDED) {
             Date closeTime = new Date();
             if (currentPomodoro != null) {
@@ -558,7 +560,9 @@ public class EventTimerActivity extends AppCompatActivity {
     private ActivityState determineState() {
         ActivityState currentState = ActivityState.WAITING;
 
-        if (currentPomodoro != null) {
+        if (!currentEvent.isActive()) {
+            currentState = ActivityState.ENDED;
+        } else if (currentPomodoro != null) {
             if (currentPomodoro.getStartDt() == null) {
                 currentState = ActivityState.INTERMISSION;
                 Log.d(LOG_TAG, "Strange state with current pomodoro but no start date");
@@ -630,7 +634,23 @@ public class EventTimerActivity extends AppCompatActivity {
                 }
             };
 
-            database.subscribePomodoros(currentEvent, pomodoroListener);
+            eventListener = new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    Event ev = dataSnapshot.getValue(Event.class);
+                    currentEvent = ev;
+                    currentPomodoro = ev.getCurrentPomodoro();
+                    refreshUI();
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            };
+
+            //database.subscribePomodoros(currentEvent, pomodoroListener);
+            database.subscribeEventChanges(currentEvent, eventListener);
         }
     }
 }
