@@ -3,6 +3,7 @@ package com.operationalsystems.pomodorotimer;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
@@ -102,6 +103,14 @@ public class PomodoroWidget extends AppWidgetProvider {
                 updateAppWidget(context, widgetManager, widgetIds[i], mainText, status, e.getKey());
             }
         }
+    }
+
+    static Intent broadcastUodate(Context fromContext) {
+        Intent intent = new Intent(fromContext, PomodoroWidget.class);
+        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+        int ids[] = AppWidgetManager.getInstance(fromContext).getAppWidgetIds(new ComponentName(fromContext, PomodoroWidget.class));
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);
+        return intent;
     }
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,

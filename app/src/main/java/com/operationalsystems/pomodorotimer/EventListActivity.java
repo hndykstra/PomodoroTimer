@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -248,10 +249,14 @@ public class EventListActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            startActivity(new Intent(this, SettingsActivity.class));
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
+            startActivity(new Intent(this, SettingsActivity.class), transitions);
             return true;
         } else if (id == R.id.action_teams) {
-            startActivity(new Intent(this, TeamJoinActivity.class));
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
+            startActivity(new Intent(this, TeamJoinActivity.class), transitions);
             return true;
         } else if (id == R.id.action_logout) {
             this.auth.signOut();
@@ -284,6 +289,7 @@ public class EventListActivity extends AppCompatActivity {
                         return u;
                     }
                 });
+        sendBroadcast(PomodoroWidget.broadcastUodate(this));
     }
 
     private void onLogout() {
@@ -317,18 +323,23 @@ public class EventListActivity extends AppCompatActivity {
             }).then(new Promise.PromiseReceiver() {
                 @Override
                 public Object receive(Object t) {
+                    sendBroadcast(PomodoroWidget.broadcastUodate(EventListActivity.this));
                     Intent timerActivityIntent = new Intent(EventListActivity.this, EventTimerActivity.class);
+                    Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(EventListActivity.this)
+                            .toBundle();
                     timerActivityIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
                     timerActivityIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
-                    startActivity(timerActivityIntent);
+                    startActivity(timerActivityIntent, transitions);
                     return t;
                 }
             });
         } else {
             Intent summaryViewIntent = new Intent(this, EventSummaryActivity.class);
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
             summaryViewIntent.putExtra(EXTRA_EVENT_ID, event.getKey());
             summaryViewIntent.putExtra(STORE_TEAM_DOMAIN, teamDomain);
-            startActivity(summaryViewIntent);
+            startActivity(summaryViewIntent, transitions);
         }
     }
 
@@ -378,7 +389,9 @@ public class EventListActivity extends AppCompatActivity {
         } else if (selected.stringResourceId == R.string.option_private_events) {
             viewTeamData(null);
         } else if (selected.stringResourceId == R.string.option_my_team) {
-            startActivity(new Intent(this, TeamJoinActivity.class));
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
+            startActivity(new Intent(this, TeamJoinActivity.class), transitions);
         }
     }
 

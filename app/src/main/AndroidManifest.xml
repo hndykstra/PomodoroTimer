@@ -24,7 +24,7 @@
         <activity
             android:name=".EventListActivity"
             android:label="@string/main_activity_title"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.DefaultTransition">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -38,7 +38,7 @@
         <activity
             android:name=".EventTimerActivity"
             android:label="@string/title_activity_event_timer"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.DefaultTransition">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.operationalsystems.pomodorotimer.EventListActivity" />
@@ -46,7 +46,7 @@
         <activity
             android:name=".EventSummaryActivity"
             android:label="@string/title_summary"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.DefaultTransition">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.operationalsystems.pomodorotimer.EventListActivity" />
@@ -54,7 +54,7 @@
         <activity
             android:name=".TeamJoinActivity"
             android:label="@string/title_activity_team_join"
-            android:theme="@style/AppTheme.NoActionBar"
+            android:theme="@style/AppTheme.DefaultTransition"
             android:windowSoftInputMode="stateHidden">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
@@ -63,7 +63,7 @@
         <activity
             android:name=".TeamManageActivity"
             android:label="@string/title_activity_team_manage"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.DefaultTransition">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.operationalsystems.pomodorotimer.TeamJoinActivity" />

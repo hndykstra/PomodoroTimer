@@ -3,7 +3,7 @@
     android:id="@+id/widget_layout"
     android:layout_width="match_parent"
     android:layout_height="40dp"
-    android:background="@color/colorPrimaryDark"
+    android:background="@drawable/widget_fill"
     android:padding="@dimen/widget_margin">
 
     <ImageView
@@ -12,6 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginRight="@dimen/small_layout_margin"
+        android:layout_marginLeft="@dimen/small_layout_margin"
         android:layout_centerVertical="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentLeft="true"/>
