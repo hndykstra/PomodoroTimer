@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NavUtils;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -99,6 +100,8 @@ public class EventTimerActivity extends AppCompatActivity {
         }
     }
 
+    // ui state
+    private boolean freezeUi = false;
     // activity state information
     private String eventKey;
     private String teamDomain;
@@ -301,6 +304,7 @@ public class EventTimerActivity extends AppCompatActivity {
     }
 
     private void closeEvent() {
+        this.freezeUi = true;
         Intent summaryIntent = new Intent(this, EventSummaryActivity.class);
         summaryIntent.putExtra(EventSummaryActivity.EXTRA_EVENT_ID, currentEvent.getKey());
         summaryIntent.putExtra(EventSummaryActivity.EXTRA_TEAM_DOMAIN, currentEvent.getTeamDomain());
@@ -320,7 +324,9 @@ public class EventTimerActivity extends AppCompatActivity {
             currentEvent.setEndDt(closeTime);
             updateEvent(summaryIntent);
         } else {
-            startActivity(summaryIntent);
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
+            startActivity(summaryIntent, transitions);
         }
     }
 
@@ -539,7 +545,9 @@ public class EventTimerActivity extends AppCompatActivity {
     private void updateEvent(final Intent after) {
         update();
         if (after != null) {
-            startActivity(after);
+            Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                    .toBundle();
+            startActivity(after, transitions);
         }
     }
 
@@ -547,8 +555,10 @@ public class EventTimerActivity extends AppCompatActivity {
         // process possible change in the current pomodoro
         currentPomodoro = currentEvent.getCurrentPomodoro();
         ActivityState state = determineState();
+        if (!freezeUi) {
+            updateState(state);
+        }
 
-        updateState(state);
         // if the state is activity or break, start the timer as the pomodoro is already running
         if (state == ActivityState.ACTIVITY || state == ActivityState.BREAK || state == ActivityState.INTERMISSION) {
             startTimer();
@@ -641,6 +651,7 @@ public class EventTimerActivity extends AppCompatActivity {
                     currentEvent = ev;
                     currentPomodoro = ev.getCurrentPomodoro();
                     refreshUI();
+                    sendBroadcast(PomodoroWidget.broadcastUodate(EventTimerActivity.this));
                 }
 
                 @Override

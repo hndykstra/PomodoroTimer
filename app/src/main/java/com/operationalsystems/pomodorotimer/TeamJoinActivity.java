@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
@@ -174,7 +175,9 @@ public class TeamJoinActivity extends AppCompatActivity {
                 if (ADMIN_ROLES.contains(activeMembership.getRole())) {
                     Intent manageIntent = new Intent(this, TeamManageActivity.class);
                     manageIntent.putExtra(TeamManageActivity.STORE_TEAM_DOMAIN, activeTeam.getDomainName());
-                    startActivity(manageIntent);
+                    Bundle transitions = ActivityOptionsCompat.makeSceneTransitionAnimation(this)
+                            .toBundle();
+                    startActivity(manageIntent, transitions);
                 }
             } else {
                 database.joinTeam(teamName, theUser.getUid(), TeamMember.Role.Applied, theUser.getUid())
