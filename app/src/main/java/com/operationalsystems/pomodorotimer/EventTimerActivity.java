@@ -38,12 +38,16 @@ import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.Date;
+import java.util.EnumSet;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class EventTimerActivity extends AppCompatActivity {
     private static final String LOG_TAG = "EventTimerActivity";
+    private static final EnumSet<ActivityState> KEEP_ALIVE_STATES = EnumSet.of(
+      ActivityState.ACTIVITY, ActivityState.BREAK
+    );
 
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
@@ -555,6 +559,7 @@ public class EventTimerActivity extends AppCompatActivity {
         // process possible change in the current pomodoro
         currentPomodoro = currentEvent.getCurrentPomodoro();
         ActivityState state = determineState();
+        timerCount.setKeepScreenOn(KEEP_ALIVE_STATES.contains(state));
         if (!freezeUi) {
             updateState(state);
         }
