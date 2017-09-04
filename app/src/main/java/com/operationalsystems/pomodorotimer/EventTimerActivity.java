@@ -653,10 +653,12 @@ public class EventTimerActivity extends AppCompatActivity {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
                     Event ev = dataSnapshot.getValue(Event.class);
-                    currentEvent = ev;
-                    currentPomodoro = ev.getCurrentPomodoro();
-                    refreshUI();
-                    sendBroadcast(PomodoroWidget.broadcastUodate(EventTimerActivity.this));
+                    if (ev != null) {
+                        currentEvent = ev;
+                        currentPomodoro = ev.getCurrentPomodoro();
+                        refreshUI();
+                        sendBroadcast(PomodoroWidget.broadcastUodate(EventTimerActivity.this));
+                    }
                 }
 
                 @Override
