@@ -5,11 +5,15 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.NumberPicker;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -19,6 +23,8 @@ import butterknife.ButterKnife;
  */
 
 public class CreatePomodoroDlgFragment extends DialogFragment {
+    private static final String LOG_TAG = "CreatePomodoroDlg";
+
     public static final String BUNDLE_KEY_EVENTNAME = "EventName";
     public static final String BUNDLE_KEY_POMODORONAME = "PomodoroName";
     public static final String BUNDLE_KEY_ACTIVITY_LENGTH = "ActivityMinutes";
@@ -50,17 +56,39 @@ public class CreatePomodoroDlgFragment extends DialogFragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        final AlertDialog dialog = (AlertDialog)getDialog();
+        if (dialog != null) {
+            Button positive = dialog.getButton(Dialog.BUTTON_POSITIVE);
+            positive.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    // extract data and send to consumer
+                    params.pomodoroName = CreatePomodoroDlgFragment.this.pomodoroName.getText().toString();
+                    params.activityMinutes = CreatePomodoroDlgFragment.this.activityLengthPicker.getValue();
+                    params.breakMinutes = CreatePomodoroDlgFragment.this.breakLengthPicker.getValue();
+                    if (params.pomodoroName != null && params.pomodoroName.length() > 0) {
+                        listener.doCreatePomodoro(CreatePomodoroDlgFragment.this.params);
+                        dialog.dismiss();
+                    } else {
+                        Log.d(LOG_TAG, "Empty pomodoro name");
+                        Toast.makeText(pomodoroName.getContext(), R.string.pomodoro_name_required, Toast.LENGTH_LONG)
+                                .show();
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setPositiveButton(R.string.create_event_button, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                // extract data and send to consumer
-                params.pomodoroName = CreatePomodoroDlgFragment.this.pomodoroName.getText().toString();
-                params.activityMinutes = CreatePomodoroDlgFragment.this.activityLengthPicker.getValue();
-                params.breakMinutes = CreatePomodoroDlgFragment.this.breakLengthPicker.getValue();
-                listener.doCreatePomodoro(CreatePomodoroDlgFragment.this.params);
-                dialog.dismiss();
+                // provide a no-op which is replaced in onResume with an actual
+                // onClick that controls the dialog dismiss logic
             }
         });
         builder.setNegativeButton(R.string.cancel_button, new DialogInterface.OnClickListener() {

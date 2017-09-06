@@ -83,9 +83,9 @@ public class PomodoroWidget extends AppWidgetProvider {
         }
 
         private void updateEvent(Event e) {
-            String mainText = e.getName();
+            String mainText = e == null ? "" : e.getName();
             String status = "";
-            if (e.isActive()) {
+            if (e != null && e.isActive()) {
                 Pomodoro current = e.getCurrentPomodoro();
                 if (current == null) {
                     status = context.getString(R.string.widget_status_waiting);
@@ -100,7 +100,7 @@ public class PomodoroWidget extends AppWidgetProvider {
                 mainText = context.getString((R.string.widget_none_active));
             }
             for (int i=0 ; i < widgetIds.length ; ++i) {
-                updateAppWidget(context, widgetManager, widgetIds[i], mainText, status, e.getKey());
+                updateAppWidget(context, widgetManager, widgetIds[i], mainText, status, e == null ? null : e.getKey());
             }
         }
     }

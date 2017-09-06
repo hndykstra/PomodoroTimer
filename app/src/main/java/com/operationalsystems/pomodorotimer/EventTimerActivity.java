@@ -342,6 +342,25 @@ public class EventTimerActivity extends AppCompatActivity {
         TimerData result = new TimerData();
         result.overtime = false;
         long timeDiff = end.getTime() - start.getTime();
+        long timeRemaining = timeLimitMinutes * 60L * 1000L - timeDiff;
+        Log.d(LOG_TAG, "Remaining time: " + timeRemaining);
+        int hours = 0;
+        int minutes = 0;
+        int seconds = 0;
+        if (timeRemaining <= 0) {
+            result.overtime = true;
+        } else {
+            minutes = (int) (timeRemaining / (60 * 1000));
+            seconds = (int) (timeRemaining % (60 * 1000)) / 1000;
+            hours = minutes / 60;
+            minutes = minutes % 60;
+        }
+        if (hours > 0) {
+            result.formattedText = String.format(getString(R.string.timer_format_hours), hours, minutes, seconds);
+        } else {
+            result.formattedText = String.format(getString(R.string.timer_format), minutes, seconds);
+        }
+        /* old count-up logic - re-instate with user preference
         if (timeDiff <= 0) {
             result.formattedText = "0:00";
         } else {
@@ -356,6 +375,7 @@ public class EventTimerActivity extends AppCompatActivity {
                 result.formattedText = String.format("%d:%02d", minutes, seconds);
             }
         }
+        */
         return result;
     }
 

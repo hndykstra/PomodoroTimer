@@ -92,4 +92,9 @@
     <string name="role_view_label">(%s)</string>
 
     <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="timer_format_hours" formatted="false">%d:%02d:%02d</string>
+    <string name="timer_format" formatted="false">%d:%02d</string>
+    <string name="pomodoro_name_required">A value is required for the name.</string>
+    <string name="event_name_required">A value is required for the name.</string>
+    <string name="team_name_required">A value is required for the name.</string>
 </resources>
