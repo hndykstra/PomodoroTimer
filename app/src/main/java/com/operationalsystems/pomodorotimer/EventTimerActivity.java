@@ -343,6 +343,7 @@ public class EventTimerActivity extends AppCompatActivity {
         result.overtime = false;
         long timeDiff = end.getTime() - start.getTime();
         long timeRemaining = timeLimitMinutes * 60L * 1000L - timeDiff;
+        Log.d(LOG_TAG, "Remaining time: " + timeRemaining);
         int hours = 0;
         int minutes = 0;
         int seconds = 0;
