@@ -128,6 +128,7 @@ public class TeamManageActivity extends AppCompatActivity {
         }
     }
 
+    // return true if this method does anything other than assign the new role.
     private boolean processRoleChange(final String uid, final TeamMember member, final TeamMember.Role newRole) {
         if (newRole == TeamMember.Role.None) {
             // delete the team member and return false;
@@ -146,7 +147,7 @@ public class TeamManageActivity extends AppCompatActivity {
                         adapter.updateMember(uid, member);
                     }
                 });
-            return true;
+            return false;
         }
         // otherwise just return true
         return true;
