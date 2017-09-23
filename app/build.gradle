@@ -5,7 +5,7 @@ android {
         config {
             keyAlias 'signingKey'
             keyPassword 'udacity'
-            storeFile file('$rootdir/pomodoro.jks')
+            storeFile file("$rootDir/pomodoro.jks")
             storePassword 'udacity'
         }
     }
