@@ -1,28 +1,17 @@
 package com.operationalsystems.pomodorotimer;
 
-import android.content.Context;
-import android.database.Cursor;
-import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.TextView;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.database.DatabaseReference;
 import com.operationalsystems.pomodorotimer.data.Event;
-import com.operationalsystems.pomodorotimer.data.PomodoroEventContract;
 
 import java.util.ArrayList;
-import java.util.List;
-
-import butterknife.BindView;
-import butterknife.ButterKnife;
 
 /**
  * Recycler list adapter for the event list view.
  */
-public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAdapter.EventItem> {
+public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventItem> {
 
     public interface EventSelectionListener {
         void eventSelected(Event event);
@@ -31,7 +20,7 @@ public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAd
     private EventSelectionListener listener;
 
     public EventListAdapter(DatabaseReference reference, EventSelectionListener listener) {
-        super(Event.class, R.layout.event_item, EventListAdapter.EventItem.class, reference);
+        super(Event.class, R.layout.event_item, EventItem.class, reference);
         this.listener = listener;
     }
 
@@ -72,21 +61,4 @@ public class EventListAdapter extends FirebaseRecyclerAdapter<Event, EventListAd
         return eventName;
     }
 
-    static class EventItem extends RecyclerView.ViewHolder {
-
-        @BindView(R.id.eventItemTitleView) TextView titleView;
-        private Event boundEvent;
-
-        public EventItem(View itemView) {
-            super(itemView);
-
-            ButterKnife.bind(this, itemView);
-        }
-
-        void bind(Event event) {
-            this.boundEvent = event;
-            titleView.setText(event.getName());
-            titleView.setEnabled(event.isActive());
-        }
-    }
 }

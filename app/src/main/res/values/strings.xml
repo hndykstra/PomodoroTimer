@@ -97,4 +97,8 @@
     <string name="pomodoro_name_required">A value is required for the name.</string>
     <string name="event_name_required">A value is required for the name.</string>
     <string name="team_name_required">A value is required for the name.</string>
+
+    <string name="fab_add_event">Start a new activity</string>
+    <string name="fab_remove_event">Remove the record of this activity</string>
+    <string name="fab_add_team">Create a new team</string>
 </resources>
