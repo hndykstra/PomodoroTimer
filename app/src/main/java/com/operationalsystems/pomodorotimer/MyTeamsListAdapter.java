@@ -16,6 +16,8 @@ import com.operationalsystems.pomodorotimer.data.Pomodoro;
 import com.operationalsystems.pomodorotimer.data.PomodoroFirebaseHelper;
 import com.operationalsystems.pomodorotimer.data.Team;
 import com.operationalsystems.pomodorotimer.data.TeamMember;
+import com.operationalsystems.pomodorotimer.data.User;
+import com.operationalsystems.pomodorotimer.util.Promise;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -207,11 +209,24 @@ public class MyTeamsListAdapter extends RecyclerView.Adapter<MyTeamsListAdapter.
         }
 
         void bind(Team team) {
+            final Context ctxt = itemView.getContext();
             this.boundTeam = team;
             nameView.setText(team.getDomainName());
             ownerView.setText(team.getOwnerUid());
+            database.queryUser(team.getOwnerUid()).then(new Promise.PromiseReceiver() {
+                @Override
+                public Object receive(Object t) {
+                    User u = (User) t;
+                    String ownerDisplay = u.getEmail();
+                    if (ownerDisplay == null || ownerDisplay.isEmpty()) {
+                        ownerDisplay = u.getDisplayName();
+                    }
+                    ownerView.setText(ctxt.getString(R.string.label_team_owner, ownerDisplay));
+                    return t;
+                }
+            });
             TeamMember teamMember = boundTeam.findTeamMember(uid);
-            String roleString = itemView.getContext().getString(R.string.role_view_label, teamMember.getRole().toString());
+            String roleString = ctxt.getString(R.string.role_view_label, teamMember.getRole().toString());
         }
     }
 }

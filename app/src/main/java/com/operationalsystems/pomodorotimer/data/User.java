@@ -12,6 +12,7 @@ import java.util.Map;
 public class User {
     private String uid;
     private String displayName;
+    private String email;
     private String recentEvent;
     private String recentTeam;
 
@@ -30,6 +31,14 @@ public class User {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getRecentEvent() {
