@@ -6,7 +6,7 @@
     android:layout_marginBottom="@dimen/small_layout_margin">
     <Spinner
         android:id="@+id/dropdown_role"
-        android:layout_width="100dp"
+        android:layout_width="140dp"
         android:layout_height="wrap_content"
         />
     <TextView

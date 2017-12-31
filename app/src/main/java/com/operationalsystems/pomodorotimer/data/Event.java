@@ -17,11 +17,11 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * POJO for event data.
+ * POJO for event data. An event is an activity that may be
+ * a personal activity or a team activity, with associated
+ * members / participants and a list of pomodoros.
  */
-
 public class Event {
-
     private transient String key;
     private String name;
     private String owner;

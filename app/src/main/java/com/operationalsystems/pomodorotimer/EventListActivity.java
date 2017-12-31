@@ -49,7 +49,8 @@ import butterknife.ButterKnife;
 import butterknife.OnItemSelected;
 
 /**
- * TODO: add support for loading indicator
+ * Front screen activity that shows events that are in progress
+ * or recently completed.
  */
 public class EventListActivity extends AppCompatActivity {
 
@@ -63,6 +64,12 @@ public class EventListActivity extends AppCompatActivity {
 
     private static final EnumSet<TeamMember.Role> VALID_MEMBERS = EnumSet.of(TeamMember.Role.Owner, TeamMember.Role.Admin, TeamMember.Role.Member);
 
+    /**
+     * Local class representing an item that is displayed in
+     * the team selection drop down. The items "Personal Activities"
+     * and "Create or join ..." are not actually teams but have a display
+     * string and a resourceId that makes them distinguishable.
+     */
     class TeamDisplay {
 
         int stringResourceId;
@@ -102,6 +109,9 @@ public class EventListActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Firebase Auth listener implementation.
+     */
     private class AuthListener implements FirebaseAuth.AuthStateListener {
 
         @Override
@@ -116,6 +126,7 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private static final String LOG_TAG = "EventListActivity";
+    /** Result tag constant for the Firebase AuthUI result. */
     private static final int RESULT_AUTH_ID = 20532;
 
     /**
@@ -277,6 +288,7 @@ public class EventListActivity extends AppCompatActivity {
                             u = new User();
                             u.setUid(theUser.getUid());
                             u.setDisplayName(theUser.getDisplayName());
+                            u.setEmail(theUser.getEmail());
                             database.createUser(u);
                         }
                         Log.d(LOG_TAG, "login team domain " + teamDomain);

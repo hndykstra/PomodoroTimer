@@ -4,28 +4,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Promise-like structure
+ * Promise-like structure, helps with asynchronous
+ * operations that return a result, like Firebase
+ * queries.
  */
-
 public class Promise {
 
+    /**
+     * Callback that will receive the result
+     * if the method is successful.
+     */
     public interface PromiseReceiver {
         public Object receive(Object t);
     }
 
+    /**
+     * Callback that will receive an error object
+     * if the result is not successful.
+     */
     public interface PromiseCatcher {
         public void catchError(Object reason);
     }
 
+    /**
+     * Helper to direct results and errors down the
+     * promise chain.
+     */
     private interface ResultConsumer {
         public void accept(Object value);
         public void passOnError(Object reason);
     }
 
+    /**
+     * Encapsulating the error handling.
+     */
     private interface ErrorHandler {
         public void catchError(Object reason);
     }
 
+    /**
+     * Hidden class to adapt multiple results
+     * feeding to a single composite promise.
+     * E.g. Promise.all
+     */
     private static class PromiseAdapter {
         Object[] results;
         int count;
@@ -75,8 +96,16 @@ public class Promise {
         return p;
     }
 
-    // cheap reference count, assuming each promise is either accepted or rejected zero or one times
+    /**
+     * Lazy implementation of a composite promise that aggregates results of
+     * multiple input input promises. The resulting promise is rejected if any
+     * of the list are rejected, and resolved with an array of results when all
+     * the promises in the list are resolved.
+     * @param list Input promises.
+     * @return Composite promise.
+     */
     public static Promise all(Promise... list) {
+        // cheap reference count, assuming each promise is either accepted or rejected zero or one times
         Promise promiseAll = new Promise();
         final PromiseAdapter holder = new PromiseAdapter(promiseAll, list.length);
 
@@ -115,7 +144,7 @@ public class Promise {
 
     /**
      * Attaches a receiver to handle the fulfilled promise.
-     * This would be easier with Java 8 Function&lt;T,U&gt;
+     * This would be cleaner with Java 8 Function&lt;T,U&gt;
      * @param receiver Functional interface to receive the promised value.
      * @return Promise for the result of receiver.
      */
