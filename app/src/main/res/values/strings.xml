@@ -10,6 +10,9 @@
     <string name="pref_sound_alarm">Play Notification</string>
     <string name="pref_sound_alarm_key" translatable="false">pref_sound_alarm</string>
     <string name="pref_sound_alarm_smry">Play notification sound when time expires</string>
+    <string name="pref_count_up">Timers Count Up</string>
+    <string name="pref_count_up_key">pref_count_up</string>
+    <string name="pref_count_up_smry">Timers count up during pomodoros and breaks</string>
 
     <string name="label_activity_length">Pomodoro Length</string>
     <string name="label_break_length">Break Length</string>

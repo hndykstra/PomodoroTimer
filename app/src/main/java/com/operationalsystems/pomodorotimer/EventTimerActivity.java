@@ -186,6 +186,7 @@ public class EventTimerActivity extends AppCompatActivity {
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
         outState.putString(EventListActivity.EXTRA_EVENT_ID, this.eventKey);
         outState.putString(EventListActivity.STORE_TEAM_DOMAIN, this.teamDomain);
     }
@@ -279,7 +280,7 @@ public class EventTimerActivity extends AppCompatActivity {
             // no-op
         } else if (state == ActivityState.ACTIVITY) {
             if (currentPomodoro.getStartDt() != null) {
-                TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date());
+                TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date(), false);
                 this.timerCount.setText(timerInfo.formattedText);
                 if (timerInfo.overtime) {
                     this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColorOvertime));
@@ -290,13 +291,13 @@ public class EventTimerActivity extends AppCompatActivity {
         } else if (state == ActivityState.INTERMISSION) {
             // for now in intermission just leave the timer text at whatever it was when intermission started
             if (currentPomodoro.getEndDt() != null) {
-                TimerData timerInfo = computeTimer(Integer.MAX_VALUE, currentPomodoro.getEndDt(), new Date());
+                TimerData timerInfo = computeTimer(Integer.MAX_VALUE, currentPomodoro.getEndDt(), new Date(), true);
                 this.timerCount.setText(timerInfo.formattedText);
             }
         } else if (state == ActivityState.BREAK) {
             // in some race conditions, the state might not be valid
             if (currentPomodoro.getBreakDt() != null) {
-                TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date());
+                TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date(), false);
                 this.timerCount.setText(timerInfo.formattedText);
                 if (timerInfo.overtime) {
                     this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColorOvertime));
@@ -335,47 +336,48 @@ public class EventTimerActivity extends AppCompatActivity {
     }
 
     /*
-     * Formats the timer tex
-     * @return True if the timer is
+     * Formats the timer text
+     * @return
      */
-    private TimerData computeTimer(int timeLimitMinutes, Date start, Date end) {
+    private TimerData computeTimer(int timeLimitMinutes, Date start, Date end, boolean countUp) {
         TimerData result = new TimerData();
         result.overtime = false;
         long timeDiff = end.getTime() - start.getTime();
         long timeRemaining = timeLimitMinutes * 60L * 1000L - timeDiff;
         Log.d(LOG_TAG, "Remaining time: " + timeRemaining);
-        int hours = 0;
-        int minutes = 0;
-        int seconds = 0;
-        if (timeRemaining <= 0) {
-            result.overtime = true;
-        } else {
-            minutes = (int) (timeRemaining / (60 * 1000));
-            seconds = (int) (timeRemaining % (60 * 1000)) / 1000;
-            hours = minutes / 60;
-            minutes = minutes % 60;
-        }
-        if (hours > 0) {
-            result.formattedText = String.format(getString(R.string.timer_format_hours), hours, minutes, seconds);
-        } else {
-            result.formattedText = String.format(getString(R.string.timer_format), minutes, seconds);
-        }
-        /* old count-up logic - re-instate with user preference
-        if (timeDiff <= 0) {
-            result.formattedText = "0:00";
-        } else {
-            int minutes = (int) (timeDiff / (60 * 1000));
-            int seconds = (int) (timeDiff % (60 * 1000)) / 1000;
-            result.overtime = (minutes >= timeLimitMinutes);
-            int hours = minutes / 60;
-            minutes = minutes % 60;
-            if (hours > 0) {
-                result.formattedText = String.format("%d:%02d:%02d", hours, minutes, seconds);
+        if (countUp) {
+            int hours = 0;
+            int minutes = 0;
+            int seconds = 0;
+            if (timeRemaining <= 0) {
+                result.overtime = true;
             } else {
-                result.formattedText = String.format("%d:%02d", minutes, seconds);
+                minutes = (int) (timeRemaining / (60 * 1000));
+                seconds = (int) (timeRemaining % (60 * 1000)) / 1000;
+                hours = minutes / 60;
+                minutes = minutes % 60;
+            }
+            if (hours > 0) {
+                result.formattedText = String.format(getString(R.string.timer_format_hours), hours, minutes, seconds);
+            } else {
+                result.formattedText = String.format(getString(R.string.timer_format), minutes, seconds);
+            }
+        } else {
+            if (timeDiff <= 0) {
+                result.formattedText = "0:00";
+            } else {
+                int minutes = (int) (timeDiff / (60 * 1000));
+                int seconds = (int) (timeDiff % (60 * 1000)) / 1000;
+                int hours = minutes / 60;
+                minutes = minutes % 60;
+                result.overtime = (minutes >= timeLimitMinutes);
+                if (hours > 0) {
+                    result.formattedText = String.format("%d:%02d:%02d", hours, minutes, seconds);
+                } else {
+                    result.formattedText = String.format("%d:%02d", minutes, seconds);
+                }
             }
         }
-        */
         return result;
     }
 
