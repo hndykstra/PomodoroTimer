@@ -114,6 +114,7 @@ public class EventTimerActivity extends AppCompatActivity {
     private ActivityState state;
     private boolean soundAlarm = false;
     private boolean isOwner = false;
+    private boolean countUp = false;
 
     private FirebaseAuth auth;
     private FirebaseAuth.AuthStateListener authListener;
@@ -204,6 +205,8 @@ public class EventTimerActivity extends AppCompatActivity {
         super.onResume();
         soundAlarm = PreferenceManager.getDefaultSharedPreferences(this)
                 .getBoolean(getString(R.string.pref_sound_alarm_key), false);
+        countUp = PreferenceManager.getDefaultSharedPreferences(this)
+                .getBoolean(getString(R.string.pref_count_up_key), false);
         auth.addAuthStateListener(authListener);
     }
 
@@ -280,7 +283,7 @@ public class EventTimerActivity extends AppCompatActivity {
             // no-op
         } else if (state == ActivityState.ACTIVITY) {
             if (currentPomodoro.getStartDt() != null) {
-                TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date(), false);
+                TimerData timerInfo = computeTimer(currentPomodoro.getTimerMinutes(), currentPomodoro.getStartDt(), new Date(), this.countUp);
                 this.timerCount.setText(timerInfo.formattedText);
                 if (timerInfo.overtime) {
                     this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.activityColorOvertime));
@@ -297,7 +300,7 @@ public class EventTimerActivity extends AppCompatActivity {
         } else if (state == ActivityState.BREAK) {
             // in some race conditions, the state might not be valid
             if (currentPomodoro.getBreakDt() != null) {
-                TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date(), false);
+                TimerData timerInfo = computeTimer(currentPomodoro.getBreakMinutes(), currentPomodoro.getBreakDt(), new Date(), this.countUp);
                 this.timerCount.setText(timerInfo.formattedText);
                 if (timerInfo.overtime) {
                     this.currentStatus.setTextColor(ContextCompat.getColor(this, R.color.breakColorOvertime));
@@ -345,7 +348,7 @@ public class EventTimerActivity extends AppCompatActivity {
         long timeDiff = end.getTime() - start.getTime();
         long timeRemaining = timeLimitMinutes * 60L * 1000L - timeDiff;
         Log.d(LOG_TAG, "Remaining time: " + timeRemaining);
-        if (countUp) {
+        if (!countUp) {
             int hours = 0;
             int minutes = 0;
             int seconds = 0;
@@ -454,8 +457,8 @@ public class EventTimerActivity extends AppCompatActivity {
                 // stopTimer();
                 // start a break;
                 currentPomodoro.setBreakDt(toggleDate);
+                updateState(ActivityState.BREAK);
                 updatePomodoro();
-                //updateState(ActivityState.BREAK);
                 // update();
                 // startTimer();
             } else if (state == ActivityState.BREAK
@@ -528,7 +531,8 @@ public class EventTimerActivity extends AppCompatActivity {
         }
         // UI updates should happen when the listener gets notified
         // stopTimer();
-        // updateState(ActivityState.INTERMISSION);
+        updateState(ActivityState.INTERMISSION);
+        updatePomodoro();
         // update();
         // startTimer();
     }
